@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<title>PotholeAlertBD — কর্তৃপক্ষ ইনবক্স</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: "Noto Sans Bengali", system-ui, sans-serif; margin: 0; padding: 24px; background: #0b0f14; color: #e7ecf2; }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  input, button { font-family: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #2a3542; background: #131a22; color: #e7ecf2; }
+  button { cursor: pointer; background: #1f8a4c; border-color: #1f8a4c; color: white; }
+  .card { border: 1px solid #202a35; border-radius: 10px; padding: 12px; margin: 12px 0; display: flex; gap: 12px; flex-wrap: wrap; }
+  .card img { width: 160px; height: 110px; object-fit: cover; border-radius: 6px; }
+  .muted { color: #8a97a6; font-size: 12px; }
+  #msg { color: #e8a33d; min-height: 1.2em; }
+</style>
+</head>
+<body>
+  <h1>🕳️ কর্তৃপক্ষ ইনবক্স / Authority inbox</h1>
+  <div>
+    <input id="token" type="password" placeholder="Authority token" />
+    <button id="login">লগইন</button>
+  </div>
+  <p id="msg" role="status"></p>
+  <div id="list"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+let token = '';
+try { token = sessionStorage.getItem('authToken') || ''; } catch (e) { /* storage blocked */ }
+
+function el(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  Object.assign(n, attrs);
+  n.append(...kids);
+  return n;
+}
+
+async function call(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { 'x-authority-token': token } });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+  return res.json();
+}
+
+async function update(id, status, file) {
+  const f = new FormData();
+  f.append('status', status);
+  if (file) f.append('photo', file);
+  try { await call(`/api/authority/reports/${id}`, { method: 'PATCH', body: f }); $('msg').textContent = ''; }
+  catch (e) { $('msg').textContent = e.message; }
+  load();
+}
+
+function card(r) {
+  const file = el('input', { type: 'file', accept: 'image/*' });
+  const kids = [
+    el('a', { href: r.photoUrl, target: '_blank' }, el('img', { src: r.photoUrl, alt: 'before' })),
+  ];
+  if (r.afterPhotoUrl) kids.push(el('a', { href: r.afterPhotoUrl, target: '_blank' }, el('img', { src: r.afterPhotoUrl, alt: 'after' })));
+  kids.push(el('div', {},
+    el('div', {}, `${r.roadTypeLabel} · ${r.severity} · ${r.status}`),
+    el('div', { className: 'muted' }, `${r.lat}, ${r.lng} · ${r.createdAt}`),
+    el('div', {}, r.description || ''),
+    el('div', {}, el('button', { onclick: () => update(r.id, 'in_progress') }, 'কাজ চলছে'), ' ',
+      file, ' ', el('button', { onclick: () => update(r.id, 'resolved', file.files[0]) }, 'সমাধান (after ছবি দিন)'))));
+  return el('div', { className: 'card' }, ...kids);
+}
+
+async function load() {
+  try {
+    const rows = await call('/api/authority/reports');
+    $('list').replaceChildren(...rows.map(card));
+  } catch (e) { $('msg').textContent = e.message; $('list').replaceChildren(); }
+}
+
+$('login').onclick = () => {
+  token = $('token').value.trim();
+  try { sessionStorage.setItem('authToken', token); } catch (e) { /* storage blocked */ }
+  load();
+};
+if (token) load();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "_WARNING": "PLACEHOLDER / APPROXIMATE. Hand-drawn rough boxes, NOT official boundaries. Replace with official city corporation GeoJSON before any pilot. Contacts intentionally null: no verified contact exists yet; do not invent one.",
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature",
+      "properties": { "key": "dncc", "name": "ঢাকা উত্তর সিটি কর্পোরেশন (DNCC)", "approximate": true, "contact": null },
+      "geometry": { "type": "Polygon", "coordinates": [[[90.34,23.77],[90.44,23.77],[90.44,23.90],[90.34,23.90],[90.34,23.77]]] } },
+    { "type": "Feature",
+      "properties": { "key": "dscc", "name": "ঢাকা দক্ষিণ সিটি কর্পোরেশন (DSCC)", "approximate": true, "contact": null },
+      "geometry": { "type": "Polygon", "coordinates": [[[90.37,23.69],[90.44,23.69],[90.44,23.77],[90.37,23.77],[90.37,23.69]]] } },
+    { "type": "Feature",
+      "properties": { "key": "ccc", "name": "চট্টগ্রাম সিটি কর্পোরেশন (CCC)", "approximate": true, "contact": null },
+      "geometry": { "type": "Polygon", "coordinates": [[[91.75,22.26],[91.88,22.26],[91.88,22.42],[91.75,22.42],[91.75,22.26]]] } }
+  ]
+}

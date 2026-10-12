@@ -16,6 +16,65 @@ import '../theme/app_theme.dart';
 import 'map_screen.dart' show kBangladeshCenter;
 import 'report_detail_screen.dart';
 
+Future<bool?> showDuplicateDialog(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('কাছাকাছি রিপোর্ট আগেই আছে / Already reported nearby'),
+      content: const Text(
+        'এই জায়গার কাছে একই ধরনের একটি রিপোর্ট আগেই জমা হয়েছে, তাই নতুন রিপোর্ট আলাদাভাবে সংরক্ষণ করা হয়নি।\n\n'
+        'A report for this spot already exists nearby, so yours was not saved as a new one.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('ঠিক আছে / OK'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('বিদ্যমান রিপোর্ট দেখুন / View it'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<bool?> showContactConsentDialog(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('ফোন নম্বর ও গোপনীয়তা / Phone number & privacy'),
+      content: const SingleChildScrollView(
+        child: Text(
+          'কী সংরক্ষণ হবে: আপনার দেওয়া নাম ও ফোন নম্বর।\n'
+          'কে দেখবে: শুধু অ্যাডমিন, ফলো-আপের জন্য। জনসমক্ষে দেখানো হয় না।\n'
+          'এটি সম্পূর্ণ ঐচ্ছিক; না দিলেও রিপোর্ট জমা দেওয়া যাবে।\n\n'
+          'What is stored: the name and phone number you enter.\n'
+          'Who sees it: administrators only, to follow up. It is never shown publicly.\n'
+          'It is entirely optional; you can submit without it.',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => launchUrl(
+            Uri.parse(ApiService.privacyUrl),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: const Text('গোপনীয়তা নীতি / Privacy policy'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('না / No'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('সম্মত / I agree'),
+        ),
+      ],
+    ),
+  );
+}
+
 /// Bangladeshi mobile: 01[3-9]xxxxxxxx, optionally with +88 / 88 prefix.
 final RegExp kBdPhone = RegExp(r'^(?:\+?88)?01[3-9]\d{8}$');
 
@@ -87,7 +146,11 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   Future<void> _pickPhoto(ImageSource source) async {
     final picker = ImagePicker();
-    final xfile = await picker.pickImage(source: source, maxWidth: 1600, imageQuality: 85);
+    final xfile = await picker.pickImage(
+      source: source,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
     if (xfile == null) return;
     final bytes = await xfile.readAsBytes();
     setState(() {
@@ -99,11 +162,15 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_photoBytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('গর্তের একটি ছবি যুক্ত করুন')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('গর্তের একটি ছবি যুক্ত করুন')),
+      );
       return;
     }
     if (_location == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('অবস্থান নির্বাচন করুন')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('অবস্থান নির্বাচন করুন')));
       return;
     }
 
@@ -119,7 +186,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         description: _descriptionCtrl.text.trim(),
         placeNote: _placeNoteCtrl.text.trim(),
         contactName: _contactConsent ? _contactNameCtrl.text.trim() : null,
-        contactPhone: _contactConsent ? _contactPhoneCtrl.text.trim().replaceAll(RegExp(r'[\s-]'), '') : null,
+        contactPhone: _contactConsent
+            ? _contactPhoneCtrl.text.trim().replaceAll(RegExp(r'[\s-]'), '')
+            : null,
       );
       if (!mounted) return;
       context.read<ReportsProvider>().load();
@@ -141,48 +210,18 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   Future<void> _showDuplicate(PotholeReport existing) async {
     final nav = Navigator.of(context);
-    final view = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('কাছাকাছি রিপোর্ট আগেই আছে / Already reported nearby'),
-        content: const Text(
-            'এই জায়গার কাছে একই ধরনের একটি রিপোর্ট আগেই জমা হয়েছে, তাই নতুন রিপোর্ট আলাদাভাবে সংরক্ষণ করা হয়নি।\n\n'
-            'A report for this spot already exists nearby, so yours was not saved as a new one.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ঠিক আছে / OK')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true), child: const Text('বিদ্যমান রিপোর্ট দেখুন / View it')),
-        ],
-      ),
-    );
+    final view = await showDuplicateDialog(context);
     if (!mounted) return;
     nav.pop();
-    if (view == true) nav.push(MaterialPageRoute(builder: (_) => ReportDetailScreen(report: existing)));
+    if (view == true) {
+      nav.push(
+        MaterialPageRoute(builder: (_) => ReportDetailScreen(report: existing)),
+      );
+    }
   }
 
   Future<void> _askContactConsent() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('ফোন নম্বর ও গোপনীয়তা / Phone number & privacy'),
-        content: const SingleChildScrollView(
-          child: Text(
-              'কী সংরক্ষণ হবে: আপনার দেওয়া নাম ও ফোন নম্বর।\n'
-              'কে দেখবে: শুধু অ্যাডমিন, ফলো-আপের জন্য। জনসমক্ষে দেখানো হয় না।\n'
-              'এটি সম্পূর্ণ ঐচ্ছিক; না দিলেও রিপোর্ট জমা দেওয়া যাবে।\n\n'
-              'What is stored: the name and phone number you enter.\n'
-              'Who sees it: administrators only, to follow up. It is never shown publicly.\n'
-              'It is entirely optional; you can submit without it.'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => launchUrl(Uri.parse(ApiService.privacyUrl), mode: LaunchMode.externalApplication),
-              child: const Text('গোপনীয়তা নীতি / Privacy policy')),
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('না / No')),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('সম্মত / I agree')),
-        ],
-      ),
-    );
+    final ok = await showContactConsentDialog(context);
     if (ok == true) setState(() => _contactConsent = true);
   }
 
@@ -195,14 +234,13 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
-            const Text('আপনার নাম-পরিচয় ছাড়াই রিপোর্ট জমা দেওয়া যায়। শুধু ছবি ও অবস্থান দিলেই চলবে।',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 12.5)),
+            const Text(
+              'আপনার নাম-পরিচয় ছাড়াই রিপোর্ট জমা দেওয়া যায়। শুধু ছবি ও অবস্থান দিলেই চলবে।',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12.5),
+            ),
             const SizedBox(height: 16),
             _SectionLabel('গর্তের ছবি *'),
-            _PhotoPicker(
-              photoBytes: _photoBytes,
-              onPick: _pickPhoto,
-            ),
+            _PhotoPicker(photoBytes: _photoBytes, onPick: _pickPhoto),
             const SizedBox(height: 20),
             _SectionLabel('অবস্থান *'),
             _LocationPicker(
@@ -240,14 +278,18 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             TextFormField(
               controller: _descriptionCtrl,
               maxLines: 3,
-              decoration: const InputDecoration(hintText: 'গর্তের আকার, ঝুঁকি বা অন্য তথ্য লিখুন...'),
+              decoration: const InputDecoration(
+                hintText: 'গর্তের আকার, ঝুঁকি বা অন্য তথ্য লিখুন...',
+              ),
             ),
             const SizedBox(height: 20),
             _SectionLabel('যোগাযোগ (সম্পূর্ণ ঐচ্ছিক, প্রকাশ করা হবে না)'),
             if (!_contactConsent)
               OutlinedButton(
                 onPressed: _askContactConsent,
-                child: const Text('যোগাযোগের তথ্য দিতে চান? / Add contact details (optional)'),
+                child: const Text(
+                  'যোগাযোগের তথ্য দিতে চান? / Add contact details (optional)',
+                ),
               )
             else ...[
               TextFormField(
@@ -259,7 +301,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 controller: _contactPhoneCtrl,
                 keyboardType: TextInputType.phone,
                 validator: validateBdPhone,
-                decoration: const InputDecoration(labelText: 'ফোন নম্বর (ঐচ্ছিক) / Phone (optional)'),
+                decoration: const InputDecoration(
+                  labelText: 'ফোন নম্বর (ঐচ্ছিক) / Phone (optional)',
+                ),
               ),
             ],
             const SizedBox(height: 28),
@@ -268,7 +312,11 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               child: ElevatedButton(
                 onPressed: _submitting ? null : _submit,
                 child: _submitting
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('রিপোর্ট জমা দিন'),
               ),
             ),
@@ -304,7 +352,12 @@ class _PhotoPicker extends StatelessWidget {
         if (photoBytes != null)
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.memory(photoBytes!, height: 180, width: double.infinity, fit: BoxFit.cover),
+            child: Image.memory(
+              photoBytes!,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           )
         else
           Container(
@@ -316,7 +369,11 @@ class _PhotoPicker extends StatelessWidget {
               border: Border.all(color: AppColors.border),
             ),
             child: const Center(
-              child: Icon(Icons.add_a_photo_outlined, color: AppColors.textMuted, size: 36),
+              child: Icon(
+                Icons.add_a_photo_outlined,
+                color: AppColors.textMuted,
+                size: 36,
+              ),
             ),
           ),
         const SizedBox(height: 10),
@@ -382,18 +439,25 @@ class _LocationPicker extends StatelessWidget {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.potholealertbd.app',
                     ),
                     if (location != null)
-                      MarkerLayer(markers: [
-                        Marker(
-                          point: location!,
-                          width: 34,
-                          height: 34,
-                          child: const Icon(Icons.location_on, color: AppColors.amber, size: 34),
-                        ),
-                      ]),
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: location!,
+                            width: 34,
+                            height: 34,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: AppColors.amber,
+                              size: 34,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
                 Positioned(
@@ -405,7 +469,11 @@ class _LocationPicker extends StatelessWidget {
                     backgroundColor: AppColors.card,
                     foregroundColor: AppColors.amber,
                     child: locating
-                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.my_location),
                   ),
                 ),
@@ -418,7 +486,10 @@ class _LocationPicker extends StatelessWidget {
           location != null
               ? 'স্থানাঙ্ক: ${location!.latitude.toStringAsFixed(5)}, ${location!.longitude.toStringAsFixed(5)} (মানচিত্রে ট্যাপ করে ঠিক করুন)'
               : (error ?? 'অবস্থান নির্ণয় করা হচ্ছে...'),
-          style: TextStyle(fontSize: 12, color: error != null ? AppColors.danger : AppColors.textMuted),
+          style: TextStyle(
+            fontSize: 12,
+            color: error != null ? AppColors.danger : AppColors.textMuted,
+          ),
         ),
       ],
     );
@@ -430,7 +501,11 @@ class _ChipSelector extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onSelected;
 
-  const _ChipSelector({required this.options, required this.selected, required this.onSelected});
+  const _ChipSelector({
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {

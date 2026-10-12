@@ -241,3 +241,61 @@ test('repeated failed admin auth is blocked with 429 on every admin route', asyn
   }
   assert.strictEqual((await fetch(`${base}/api/reports/admin/all`, { headers: { ...fwd('6.6.6.7'), ...adm } })).status, 200);
 });
+
+test('per-admin token works, is audited, and stops working when disabled', async () => {
+  const db = require('../src/db');
+  const { sha256 } = require('../src/security');
+  db.prepare('INSERT INTO admins (name, token_hash, created_at) VALUES (?, ?, ?)').run('alice', sha256('alice-token'), 'now');
+  const h = { ...fwd('5.5.5.1'), 'x-admin-token': 'alice-token' };
+  const r = await (await post(form({ lat: '23.9', lng: '90.5' }))).json();
+  const res = await fetch(`${base}/api/reports/${r.id}/status`, { method: 'PATCH', headers: { ...h, 'content-type': 'application/json' }, body: JSON.stringify({ status: 'rejected' }) });
+  assert.strictEqual(res.status, 200);
+  const log = await (await fetch(`${base}/api/reports/admin/audit`, { headers: { ...adm } })).json();
+  assert.ok(log.some((e) => e.actor === 'alice' && e.action === 'set_status' && e.report_id === r.id));
+  db.prepare('UPDATE admins SET disabled = 1 WHERE name = ?').run('alice');
+  assert.strictEqual((await fetch(`${base}/api/reports/admin/all`, { headers: h })).status, 401);
+});
+
+test('rate-limit counters are persisted in SQLite', () => {
+  const db = require('../src/db');
+  assert.ok(db.prepare("SELECT COUNT(*) c FROM rate_hits WHERE key LIKE 'submit:%'").get().c > 0);
+});
+
+test('authority inbox: scoped to its own reports, no contacts, resolve needs after photo', async () => {
+  const db = require('../src/db');
+  const { sha256 } = require('../src/security');
+  const mine = await (await post(form({ lat: '23.8', lng: '90.4', roadType: 'rural_road' }))).json();
+  const other = await (await post(form({ lat: '24.8', lng: '91.8', roadType: 'national_highway' }))).json();
+  db.prepare('INSERT INTO authority_tokens (token_hash, authority_name, email, created_at) VALUES (?, ?, ?, ?)')
+    .run(sha256('lged-token'), mine.authorityName, 'lged@example.test', 'now');
+  const h = { ...fwd('5.5.5.2'), 'x-authority-token': 'lged-token' };
+  assert.strictEqual((await fetch(`${base}/api/authority/reports`)).status, 401);
+  const list = await (await fetch(`${base}/api/authority/reports`, { headers: h })).json();
+  assert.ok(list.some((r) => r.id === mine.id) && !list.some((r) => r.id === other.id));
+  assert.ok(!JSON.stringify(list).includes('01700000000'));
+  const patch = (id, fields, photo) => { const f = new FormData(); for (const [k, v] of Object.entries(fields)) f.append(k, v); if (photo) f.append('photo', new Blob([photo], { type: 'image/png' }), 'a.png'); return fetch(`${base}/api/authority/reports/${id}`, { method: 'PATCH', headers: h, body: f }); };
+  assert.strictEqual((await patch(other.id, { status: 'in_progress' })).status, 404);      // not theirs
+  assert.strictEqual((await patch(mine.id, { status: 'hidden' })).status, 400);           // not an allowed status
+  assert.strictEqual((await patch(mine.id, { status: 'resolved' })).status, 400);         // needs after photo
+  assert.strictEqual((await patch(mine.id, { status: 'in_progress' })).status, 200);
+  const done = await patch(mine.id, { status: 'resolved' }, PNG);
+  assert.strictEqual(done.status, 200);
+  const j = await done.json();
+  assert.strictEqual(j.status, 'resolved');
+  assert.match(j.afterPhotoUrl, /^\/uploads\/[0-9a-f-]{36}\.png$/);
+});
+
+test('digest lists open reports per authority with an email', () => {
+  const { buildDigests } = require('../src/digest');
+  const d = buildDigests();
+  assert.ok(d.length >= 1 && d[0].to === 'lged@example.test' && /open reports/.test(d[0].text));
+});
+
+test('retention erases old contact details only', () => {
+  const db = require('../src/db');
+  const { purgeContacts } = require('../src/retention');
+  db.prepare("UPDATE reports SET created_at = '2000-01-01T00:00:00.000Z' WHERE id = (SELECT id FROM reports WHERE contact_phone IS NOT NULL LIMIT 1)").run();
+  assert.strictEqual(purgeContacts(90), 1);
+  assert.ok(db.prepare('SELECT COUNT(*) c FROM reports WHERE contact_phone IS NOT NULL').get().c > 0); // recent ones kept
+  assert.strictEqual(purgeContacts(90), 0);
+});

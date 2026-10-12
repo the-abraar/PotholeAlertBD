@@ -1,8 +1,9 @@
 'use strict';
 
 const crypto = require('crypto');
+const db = require('./db');
 
-// shortcut: in-memory per-process limiter; use a shared store (redis) if you run >1 instance.
+// shortcut: limits live in the SQLite file, so instances need a shared DB; move to redis if you outgrow one box.
 // IPv4 as-is; IPv6 (and v4-mapped) collapsed to its /64 so rotating within a prefix can't evade limits.
 function ipKey(ip) {
   ip = String(ip || '').split('%')[0].toLowerCase();
@@ -23,13 +24,21 @@ function parseTrustProxy(v = process.env.TRUST_PROXY) {
   throw new Error('TRUST_PROXY must be an integer 0-10 or one of loopback|linklocal|uniquelocal');
 }
 
-function rateLimit({ windowMs, max }) {
-  const hits = new Map();
-  setInterval(() => hits.clear(), windowMs).unref();
+// Fixed-window counter per key, stored in SQLite so limits survive restarts and are shared by instances on one DB.
+const hitStmt = db.prepare(`INSERT INTO rate_hits (key, n, reset_at) VALUES (?, 1, ?)
+  ON CONFLICT(key) DO UPDATE SET n = CASE WHEN reset_at <= ? THEN 1 ELSE n + 1 END,
+    reset_at = CASE WHEN reset_at <= ? THEN ? ELSE reset_at END RETURNING n`);
+const peekStmt = db.prepare('SELECT n FROM rate_hits WHERE key = ? AND reset_at > ?');
+function hit(key, windowMs) {
+  const now = Date.now();
+  return hitStmt.get(key, now + windowMs, now, now, now + windowMs).n;
+}
+setInterval(() => db.prepare('DELETE FROM rate_hits WHERE reset_at <= ?').run(Date.now()), 60_000).unref();
+
+// `name` namespaces the counter so two limiters never share a bucket.
+function rateLimit({ name, windowMs, max }) {
   return (req, res, next) => {
-    const n = (hits.get(ipKey(req.ip)) || 0) + 1;
-    hits.set(ipKey(req.ip), n);
-    if (n > max) return res.status(429).json({ error: 'too many requests' });
+    if (hit(`${name}:${ipKey(req.ip)}`, windowMs) > max) return res.status(429).json({ error: 'too many requests' });
     next();
   };
 }
@@ -52,27 +61,40 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ha, hb);
 }
 
-// Applied to every x-admin-token route: 30 req/min per IP, plus 10 failed auths / 15 min per IP.
-const adminRate = rateLimit({ windowMs: 60_000, max: 30 });
-const FAIL_MAX = 10, FAIL_WINDOW = 15 * 60_000;
-const fails = new Map(); // key -> { n, reset }
-setInterval(() => { const now = Date.now(); for (const [k, v] of fails) if (v.reset <= now) fails.delete(k); }, 60_000).unref();
+const sha256 = (v) => crypto.createHash('sha256').update(String(v)).digest('hex');
 
-function requireAdmin(req, res, next) {
-  adminRate(req, res, () => {
-    const key = ipKey(req.ip), now = Date.now();
-    let f = fails.get(key);
-    if (!f || f.reset <= now) { f = { n: 0, reset: now + FAIL_WINDOW }; fails.delete(key); }
-    if (f.n >= FAIL_MAX) return res.status(429).json({ error: 'too many failed attempts' });
-    const expected = process.env.ADMIN_TOKEN;
-    const token = req.header('x-admin-token');
-    if (!expected || !token || !safeEqual(token, expected)) {
-      f.n++; fails.set(key, f);
-      return res.status(401).json({ error: 'unauthorized' });
-    }
+function audit(actor, action, reportId, detail) {
+  db.prepare('INSERT INTO audit_log (at, actor, action, report_id, detail) VALUES (?, ?, ?, ?, ?)')
+    .run(new Date().toISOString(), actor, action, reportId || null, detail ? JSON.stringify(detail) : null);
+}
+
+// Token guard: 30 req/min per IP, plus 10 failed auths / 15 min per IP. resolve(token) returns an identity or null.
+const FAIL_MAX = 10, FAIL_WINDOW = 15 * 60_000;
+function tokenGuard(name, header, prop, resolve) {
+  const limit = rateLimit({ name, windowMs: 60_000, max: 30 });
+  return (req, res, next) => limit(req, res, () => {
+    const failKey = `${name}-fail:${ipKey(req.ip)}`;
+    if ((peekStmt.get(failKey, Date.now())?.n || 0) >= FAIL_MAX) return res.status(429).json({ error: 'too many failed attempts' });
+    const token = req.header(header);
+    const who = token ? resolve(token) : null;
+    if (!who) { hit(failKey, FAIL_WINDOW); return res.status(401).json({ error: 'unauthorized' }); }
+    req[prop] = who;
     next();
   });
 }
+
+// Admin: the shared ADMIN_TOKEN acts as 'root'; per-admin tokens (hashed in `admins`) act as their name.
+const requireAdmin = tokenGuard('admin', 'x-admin-token', 'actor', (token) => {
+  const root = process.env.ADMIN_TOKEN;
+  if (root && safeEqual(token, root)) return 'root';
+  return db.prepare('SELECT name FROM admins WHERE token_hash = ? AND disabled = 0').get(sha256(token))?.name || null;
+});
+
+// Authority: token scoped to one authority name; req.authority = { name, email }.
+const requireAuthority = tokenGuard('authority', 'x-authority-token', 'authority', (token) => {
+  const r = db.prepare('SELECT authority_name, email FROM authority_tokens WHERE token_hash = ?').get(sha256(token));
+  return r ? { name: r.authority_name, email: r.email } : null;
+});
 
 const BAD_TOKENS = ['', 'changeme', 'admin', 'password', 'secret', 'test'];
 function assertProductionConfig() {
@@ -83,4 +105,4 @@ function assertProductionConfig() {
   }
 }
 
-module.exports = { ipKey, parseTrustProxy, rateLimit, securityHeaders, requireAdmin, safeEqual, assertProductionConfig };
+module.exports = { sha256, audit, requireAuthority, ipKey, parseTrustProxy, rateLimit, securityHeaders, requireAdmin, safeEqual, assertProductionConfig };

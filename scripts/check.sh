@@ -11,7 +11,7 @@ run() { # name cmd...
 }
 skip() { NAMES+=("$1"); RESULTS+=("SKIP ($2)"); echo "== $1: SKIP ($2)"; }
 
-node_check() { local f; while IFS= read -r f; do node --check "$f" || return 1; done < <(find backend/src backend/test -name '*.js'); }
+node_check() { local f; while IFS= read -r f; do node --check "$f" || return 1; done < <(find backend/src backend/test backend/scripts -name '*.js'); }
 stray() {
   local out; out=$(find . \( -name node_modules -o -name .git -o -name build -o -name .dart_tool \) -prune -o \
     \( -name '*-e' -o -name '*.orig' -o -name '*.rej' -o -name '*.bak' \) -type f -print)

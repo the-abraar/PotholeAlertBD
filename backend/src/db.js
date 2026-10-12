@@ -38,6 +38,17 @@ db.exec(`
     PRIMARY KEY (report_id, ip)
   );
 
+  CREATE TABLE IF NOT EXISTS rate_hits (key TEXT PRIMARY KEY, n INTEGER NOT NULL, reset_at INTEGER NOT NULL);
+  CREATE TABLE IF NOT EXISTS admins (
+    name TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, disabled INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS authority_tokens (
+    token_hash TEXT PRIMARY KEY, authority_name TEXT NOT NULL, email TEXT, created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, report_id TEXT, detail TEXT
+  );
+
   CREATE INDEX IF NOT EXISTS idx_reports_division ON reports(division_key);
   CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
   CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at);
@@ -45,5 +56,8 @@ db.exec(`
 
 // Status to restore on unhide; set only when a flag moves a report out of new/queued_for_authority.
 try { db.exec('ALTER TABLE reports ADD COLUMN pre_flag_status TEXT'); } catch { /* already exists */ }
+
+try { db.exec('ALTER TABLE reports ADD COLUMN after_photo_filename TEXT'); } catch { /* already exists */ }
+db.exec('CREATE INDEX IF NOT EXISTS idx_reports_authority ON reports(authority_name)');
 
 module.exports = db;

@@ -1,42 +1,23 @@
 'use strict';
 
 const express = require('express');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const sharp = require('sharp');
 
 const db = require('../db');
-const { requireAdmin, ipKey } = require('../security');
+const { requireAdmin, ipKey, audit } = require('../security');
+const { UPLOAD_DIR, upload, savePhoto, removePhotos } = require('../photos');
+const { serializeReport, serializeAdminReport } = require('../serialize');
 const { detectDivision, resolveAuthority, ROAD_TYPE_LABELS } = require('../authorities');
 const { sendReportEmail } = require('../mailer');
 
 const router = express.Router();
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024, files: 1, fields: 10, fieldSize: 4096 },
-});
-
-// Extension comes from magic bytes, never from the client filename or mimetype.
-function sniffImageExt(b) {
-  if (b.length < 12) return null;
-  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return '.jpg';
-  if (b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return '.png';
-  if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') return '.webp';
-  return null;
-}
 
 // Duplicate detection: same road type within this radius and window => merged into the existing report.
 const DUP_RADIUS_M = Number(process.env.DUP_RADIUS_M) || 30;
 const DUP_WINDOW_MS = (Number(process.env.DUP_WINDOW_HOURS) || 24) * 3600_000;
 // Distinct IPs that must flag a report before it is auto-hidden.
 const FLAG_HIDE_THRESHOLD = 3;
-const MAX_INPUT_PIXELS = 40e6; // sharp default is ~268MP; decompression-bomb guard
 const PAGE_DEFAULT = 50, PAGE_MAX = 200;
 
 function page(q) {
@@ -64,30 +45,6 @@ const MAX_LEN = { description: 1000, placeNote: 300, contactName: 100, contactPh
 const VALID_ROAD_TYPES = Object.keys(ROAD_TYPE_LABELS);
 const VALID_SEVERITIES = ['low', 'medium', 'high'];
 
-function serializeReport(row) {
-  return {
-    id: row.id,
-    photoUrl: `/uploads/${row.photo_filename}`,
-    lat: row.lat,
-    lng: row.lng,
-    divisionKey: row.division_key,
-    divisionName: row.division_name,
-    roadType: row.road_type,
-    roadTypeLabel: ROAD_TYPE_LABELS[row.road_type] || row.road_type,
-    placeNote: row.place_note,
-    severity: row.severity,
-    description: row.description,
-    authorityName: row.authority_name,
-    status: row.status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function serializeAdminReport(row) {
-  return { ...serializeReport(row), contactName: row.contact_name, contactPhone: row.contact_phone };
-}
-
 // POST /api/reports  (multipart/form-data)
 router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
   if (err) return res.status(400).json({ error: 'invalid upload' });
@@ -99,8 +56,6 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
     if (!req.file) {
       return res.status(400).json({ error: 'ছবি আবশ্যক (photo is required)' });
     }
-    const ext = sniffImageExt(req.file.buffer);
-    if (!ext) return res.status(400).json({ error: 'শুধুমাত্র JPEG/PNG/WebP ছবি' });
     const latNum = lat === undefined || lat === '' ? NaN : Number(lat);
     const lngNum = lng === undefined || lng === '' ? NaN : Number(lng);
     if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
@@ -123,19 +78,13 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
     const dup = findDuplicate(latNum, lngNum, roadType);
     if (dup) return res.status(200).json({ ...serializeReport(dup), duplicate: true });
 
-    let photo;
-    try { photo = await sharp(req.file.buffer, { limitInputPixels: MAX_INPUT_PIXELS }).rotate().toBuffer(); } // rotate() bakes in EXIF orientation; output carries no metadata (EXIF/GPS)
-    catch (e) {
-      if (/pixel limit/i.test(e.message)) return res.status(413).json({ error: 'ছবির রেজোলিউশন খুব বেশি (image too large)' });
-      return res.status(400).json({ error: 'ছবি পড়া যায়নি (invalid image)' });
-    }
-
     const division = detectDivision(latNum, lngNum);
     const authority = resolveAuthority(roadType, latNum, lngNum);
 
+    const saved = await savePhoto(req.file.buffer);
+    if (saved.error) return res.status(saved.status).json({ error: saved.error });
+    const filename = saved.filename;
     const id = uuidv4();
-    const filename = `${uuidv4()}${ext}`;
-    fs.writeFileSync(path.join(UPLOAD_DIR, filename), photo);
     const now = new Date().toISOString();
 
     db.prepare(`
@@ -230,6 +179,12 @@ router.get('/admin/all', requireAdmin, (req, res) => {
   res.json(rows.map(serializeAdminReport));
 });
 
+// GET /api/reports/admin/audit  (admin only) newest first
+router.get('/admin/audit', requireAdmin, (req, res) => {
+  const { limit, offset } = page(req.query);
+  res.json(db.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?').all(limit, offset));
+});
+
 // GET /api/reports/:id
 router.get('/:id', (req, res) => {
   const row = db.prepare("SELECT * FROM reports WHERE id = ? AND status != 'hidden'").get(req.params.id);
@@ -248,6 +203,7 @@ router.patch('/:id/status', requireAdmin, (req, res) => {
 
   db.prepare('UPDATE reports SET status = ?, pre_flag_status = NULL, updated_at = ? WHERE id = ?')
     .run(status, new Date().toISOString(), req.params.id);
+  audit(req.actor, 'set_status', row.id, { from: row.status, to: status });
 
   res.json(serializeAdminReport(db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id)));
 });
@@ -276,6 +232,7 @@ router.post('/:id/unhide', requireAdmin, (req, res) => {
   if (!row) return res.status(404).json({ error: 'পাওয়া যায়নি' });
   db.prepare('DELETE FROM flags WHERE report_id = ?').run(row.id);
   db.prepare('UPDATE reports SET status = ?, pre_flag_status = NULL, updated_at = ? WHERE id = ?').run(row.pre_flag_status || 'new', new Date().toISOString(), row.id);
+  audit(req.actor, 'unhide', row.id);
   res.json(serializeAdminReport(db.prepare('SELECT * FROM reports WHERE id = ?').get(row.id)));
 });
 
@@ -285,7 +242,8 @@ router.delete('/:id', requireAdmin, (req, res) => {
   if (!row) return res.status(404).json({ error: 'পাওয়া যায়নি' });
   db.prepare('DELETE FROM flags WHERE report_id = ?').run(row.id);
   db.prepare('DELETE FROM reports WHERE id = ?').run(row.id);
-  fs.rmSync(path.join(UPLOAD_DIR, path.basename(row.photo_filename)), { force: true });
+  removePhotos(row.photo_filename, row.after_photo_filename);
+  audit(req.actor, 'delete', row.id);
   res.status(204).end();
 });
 

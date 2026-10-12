@@ -241,3 +241,12 @@ The product question "who acts on a report, and why would they?" has not been an
 
 **Not verified:** the GitHub CI workflows have never run; the pre-commit hook has never blocked a real commit; no real-device, real-user or real-host testing.
 **Next, first:** a pilot authority contact and real jurisdiction data (Update 8, step 1); check that the first CI run passes on GitHub (Node 22, Flutter).
+
+
+### Update 10 (2026-10-13, agent-made; verified by `scripts/check.sh` unless marked)
+
+**Fixed:** CI had failed on both pushes: `backend/.gitignore` pattern `data/` also ignored `backend/src/data/`, so `jurisdictions.json` was never committed. Anchored to `/data/`.
+
+**Added:** authority inbox (`/authority.html`, `GET/PATCH /api/authority/reports`, `x-authority-token`, scoped to one authority, resolve requires an after photo, `afterPhotoUrl` in the public report JSON); per-admin tokens (`admins` table, root `ADMIN_TOKEN` still works as actor `root`) and an audit log (`GET /api/reports/admin/audit`); rate limits and failed-auth counters now stored in SQLite (`rate_hits`); contact name/phone erased after `CONTACT_RETENTION_DAYS` (default 90, startup + daily); digest email (`node scripts/manage.js digest`, run from cron); `PRD.md` (ASD-STE100 style, no STE checker run, metric targets are proposals); Flutter tests for the consent and duplicate dialogs (dialogs extracted to top-level functions in `report_form_screen.dart`; navigation after "View it" is not covered). Tokens are created with `node scripts/manage.js add-admin|add-authority`.
+
+**Still open:** authority contacts and polygons (blockers 1-2) are unchanged, so nobody real receives reports; digest needs SMTP and a cron entry; no UI for managing tokens or viewing the audit log; reporters have no self-service erasure; token lifetime/rotation not handled; image moderation / face and plate blurring; hosting, HTTPS, backups; no device testing. New code has had no human review.
