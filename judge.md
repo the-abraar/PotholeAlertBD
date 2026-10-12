@@ -232,3 +232,12 @@ The product question "who acts on a report, and why would they?" has not been an
 5. **Code:** per-admin accounts and an admin audit log; shared rate-limit store (Redis or the database); retention and deletion for phone numbers.
 6. **You:** build the release APK and an iOS build, test on real phones (permissions, camera, GPS, offline); legal review of `/privacy`.
 7. **Code:** widget tests for the consent and duplicate dialogs; an image-moderation or at least face and plate blurring plan.
+
+### Update 9 (2026-10-12, stopped at the 70% usage ceiling)
+
+**Done this round:** retro guardrails (`scripts/check.sh`, pre-commit hook `.githooks/pre-commit`, CI workflow, `AGENTS.md`, `CODING_STANDARDS.md`); orphaned worktrees removed (Suggest.Bike); all work committed and pushed to `origin/main`. Usage mirror `../usage.md` is live (status line writes the 5-hour and 7-day percentages); read it before starting a round.
+
+**I was in the middle of:** nothing half-done. The last action was this log. No uncommitted work remains apart from this file.
+
+**Not verified:** the GitHub CI workflows have never run; the pre-commit hook has never blocked a real commit; no real-device, real-user or real-host testing.
+**Next, first:** a pilot authority contact and real jurisdiction data (Update 8, step 1); check that the first CI run passes on GitHub (Node 22, Flutter).
