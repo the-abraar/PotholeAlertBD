@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<title>PotholeAlertBD — এডমিন প্যানেল</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: "Noto Sans Bengali", system-ui, sans-serif; margin: 0; padding: 24px; background: #0b0f14; color: #e7ecf2; }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  input, select, button { font-family: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #2a3542; background: #131a22; color: #e7ecf2; }
+  button { cursor: pointer; background: #1f8a4c; border-color: #1f8a4c; color: white; }
+  button.secondary { background: #202a35; border-color: #2a3542; color: #e7ecf2; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #202a35; vertical-align: top; }
+  img.thumb { width: 90px; height: 60px; object-fit: cover; border-radius: 6px; }
+  .status { padding: 3px 8px; border-radius: 999px; font-size: 12px; display: inline-block; }
+  .status.new { background: #33415a; }
+  .status.queued_for_authority { background: #5a4a1f; }
+  .status.forwarded { background: #1f4a5a; }
+  .status.in_progress { background: #4a3a5a; }
+  .status.resolved { background: #1f5a33; }
+  .status.flagged, .status.hidden { background: #5a3a1f; }
+  .status.rejected { background: #5a1f1f; }
+  .muted { color: #8a97a6; font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>🕳️ PotholeAlertBD — এডমিন প্যানেল</h1>
+  <div class="bar">
+    <input id="token" type="password" placeholder="ADMIN_TOKEN দিন" />
+    <button id="saveToken">লগইন</button>
+    <select id="statusFilter">
+      <option value="">সব স্ট্যাটাস</option>
+      <option value="new">নতুন</option>
+      <option value="queued_for_authority">কর্তৃপক্ষের জন্য সারিবদ্ধ</option>
+      <option value="forwarded">প্রেরিত</option>
+      <option value="in_progress">কাজ চলছে</option>
+      <option value="resolved">সমাধান হয়েছে</option>
+      <option value="rejected">বাতিল</option>
+      <option value="flagged">ফ্ল্যাগ করা</option>
+      <option value="hidden">লুকানো</option>
+    </select>
+    <select id="pageSize" title="প্রতি পাতায়">
+      <option>25</option><option selected>50</option><option>100</option><option>200</option>
+    </select>
+    <button class="secondary" id="prev">&laquo;</button>
+    <span id="pageInfo" class="muted"></span>
+    <button class="secondary" id="next">&raquo;</button>
+    <button class="secondary" id="refresh">রিফ্রেশ</button>
+  </div>
+  <p class="muted">নোট: কর্তৃপক্ষের ইমেইল/ফোন এখনো সেট করা হয়নি বলে রিপোর্টগুলো "queued_for_authority" অবস্থায় থাকবে। backend/src/authorities.js ফাইলে যাচাইকৃত যোগাযোগের তথ্য যোগ করুন।</p>
+  <table>
+    <thead>
+      <tr><th>ছবি</th><th>সময়</th><th>অবস্থান</th><th>রাস্তার ধরন</th><th>কর্তৃপক্ষ</th><th>তীব্রতা</th><th>বিবরণ</th><th>যোগাযোগ</th><th>স্ট্যাটাস</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+<script>
+const API = location.origin + '/api';
+function getToken() { try { return sessionStorage.getItem('adminToken') || ''; } catch (e) { return ''; } }
+document.getElementById('saveToken').onclick = () => {
+  try { sessionStorage.setItem('adminToken', document.getElementById('token').value.trim()); } catch (e) {}
+  load();
+};
+document.getElementById('refresh').onclick = load;
+let PAGE = 50; let offset = 0, total = 0;
+document.getElementById('statusFilter').onchange = () => { offset = 0; load(); };
+document.getElementById('pageSize').onchange = (e) => { PAGE = Number(e.target.value); offset = 0; load(); };
+document.getElementById('prev').onclick = () => { offset = Math.max(0, offset - PAGE); load(); };
+document.getElementById('next').onclick = () => { if (offset + PAGE < total) { offset += PAGE; load(); } };
+
+const STATUS_LABELS = {
+  new: 'নতুন', queued_for_authority: 'কর্তৃপক্ষের জন্য সারিবদ্ধ', forwarded: 'প্রেরিত',
+  in_progress: 'কাজ চলছে', resolved: 'সমাধান হয়েছে', rejected: 'বাতিল', flagged: 'ফ্ল্যাগ করা', hidden: 'লুকানো'
+};
+
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function load() {
+  const status = document.getElementById('statusFilter').value;
+  const url = API + '/reports/admin/all?limit=' + PAGE + '&offset=' + offset + (status ? ('&status=' + encodeURIComponent(status)) : '');
+  const res = await fetch(url, { headers: { 'x-admin-token': getToken() } });
+  if (!res.ok) { document.getElementById('rows').innerHTML = '<tr><td colspan="9">লগইন প্রয়োজন (unauthorized)</td></tr>'; return; }
+  const rows = await res.json();
+  total = Number(res.headers.get('X-Total-Count')) || rows.length;
+  document.getElementById('pageInfo').textContent = total ? `${offset + 1}–${offset + rows.length} / ${total}` : '0';
+  const tbody = document.getElementById('rows');
+  tbody.innerHTML = '';
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    const rowHtml = `
+      <td><img class="thumb" src="${esc(r.photoUrl)}" /></td>
+      <td class="muted">${new Date(r.createdAt).toLocaleString('bn-BD')}</td>
+      <td>${esc(r.divisionName) || '—'}<br/><span class="muted">${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}</span></td>
+      <td>${esc(r.roadTypeLabel)}</td>
+      <td>${esc(r.authorityName)}</td>
+      <td>${esc(r.severity)}</td>
+      <td>${esc(r.description)}</td>
+      <td>${esc(r.contactName)}<br/>${esc(r.contactPhone)}</td>
+      <td>
+        <span class="status ${esc(r.status)}">${esc(STATUS_LABELS[r.status] || r.status)}</span><br/>
+        <select data-id="${esc(r.id)}" class="statusSelect">
+          ${Object.entries(STATUS_LABELS).map(([k,v]) => `<option value="${esc(k)}" ${k===r.status?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <br/><button class="secondary delBtn" data-id="${esc(r.id)}">মুছুন</button>
+      </td>
+    `;
+    tr.innerHTML = rowHtml; // safe-html: every dynamic value in rowHtml passes through esc() or is a number
+    tbody.appendChild(tr);
+  }
+  document.querySelectorAll('.delBtn').forEach((b) => {
+    b.onclick = async () => {
+      if (!confirm('স্থায়ীভাবে মুছে ফেলবেন?')) return;
+      await fetch(`${API}/reports/${b.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'x-admin-token': getToken() } });
+      load();
+    };
+  });
+  document.querySelectorAll('.statusSelect').forEach((sel) => {
+    sel.onchange = async (e) => {
+      const id = e.target.getAttribute('data-id');
+      await fetch(`${API}/reports/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': getToken() },
+        body: JSON.stringify({ status: e.target.value }),
+      });
+      load();
+    };
+  });
+}
+
+load();
+</script>
+</body>
+</html>

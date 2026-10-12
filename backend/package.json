@@ -1,0 +1,24 @@
+{
+  "name": "pothole-alert-bd-backend",
+  "version": "1.0.0",
+  "description": "PotholeAlertBD backend: reports API, division/authority routing, and forwarding queue",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^2.0.0",
+    "nodemailer": "^9.0.5",
+    "sharp": "^0.35.5",
+    "uuid": "^11.0.3"
+  }
+}
