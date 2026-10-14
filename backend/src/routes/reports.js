@@ -5,7 +5,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 const db = require('../db');
-const { requireAdmin, ipKey, audit } = require('../security');
+const { requireAdmin, ipKey, audit, sha256, safeEqual, newToken, listTokens, rotateToken, revokeToken } = require('../security');
 const { UPLOAD_DIR, upload, savePhoto, removePhotos } = require('../photos');
 const { serializeReport, serializeAdminReport } = require('../serialize');
 const { detectDivision, resolveAuthority, ROAD_TYPE_LABELS } = require('../authorities');
@@ -85,16 +85,17 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
     if (saved.error) return res.status(saved.status).json({ error: saved.error });
     const filename = saved.filename;
     const id = uuidv4();
+    const deletionCode = newToken(); // shown once; only its hash is stored
     const now = new Date().toISOString();
 
     db.prepare(`
       INSERT INTO reports (
         id, photo_filename, lat, lng, division_key, division_name,
         road_type, place_note, severity, description,
-        contact_name, contact_phone, authority_name, status, created_at, updated_at
+        contact_name, contact_phone, authority_name, status, created_at, updated_at, erase_hash
       ) VALUES (@id, @photo_filename, @lat, @lng, @division_key, @division_name,
         @road_type, @place_note, @severity, @description,
-        @contact_name, @contact_phone, @authority_name, @status, @created_at, @updated_at)
+        @contact_name, @contact_phone, @authority_name, @status, @created_at, @updated_at, @erase_hash)
     `).run({
       id,
       photo_filename: filename,
@@ -112,13 +113,14 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
       status: 'new',
       created_at: now,
       updated_at: now,
+      erase_hash: sha256(deletionCode),
     });
 
     // Attempt to forward. Never blocks the response on failure.
     const row = db.prepare('SELECT * FROM reports WHERE id = ?').get(id);
     forwardToAuthority(row).catch(() => {});
 
-    return res.status(201).json(serializeReport(row));
+    return res.status(201).json({ ...serializeReport(row), deletionCode });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'সার্ভার ত্রুটি (server error)' });
@@ -183,6 +185,35 @@ router.get('/admin/all', requireAdmin, (req, res) => {
 router.get('/admin/audit', requireAdmin, (req, res) => {
   const { limit, offset } = page(req.query);
   res.json(db.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?').all(limit, offset));
+});
+
+// GET /api/reports/admin/tokens  (admin only) admins and authority tokens, never hashes
+router.get('/admin/tokens', requireAdmin, (req, res) => res.json(listTokens()));
+
+// POST /api/reports/admin/tokens/:kind/:ref/(rotate|revoke)  (admin only) kind = admin|authority; ref = admin name | authority token id
+function tokenAction(act) {
+  return (req, res) => {
+    const { kind, ref } = req.params;
+    if (!['admin', 'authority'].includes(kind)) return res.status(400).json({ error: 'kind must be admin or authority' });
+    const r = kind === 'authority' ? Number(ref) : ref;
+    const out = act === 'rotate' ? rotateToken(kind, r, req.actor) : revokeToken(kind, r, req.actor);
+    if (!out) return res.status(404).json({ error: 'no such active token' });
+    res.json(act === 'rotate' ? { token: out } : { ok: true });
+  };
+}
+router.post('/admin/tokens/:kind/:ref/rotate', requireAdmin, tokenAction('rotate'));
+router.post('/admin/tokens/:kind/:ref/revoke', requireAdmin, tokenAction('revoke'));
+
+// POST /api/reports/:id/erase-contact  {code}  (public, authorised by the per-report deletion code; per-IP limited in app.js)
+router.post('/:id/erase-contact', (req, res) => {
+  const code = req.body && req.body.code;
+  const row = db.prepare('SELECT erase_hash FROM reports WHERE id = ?').get(req.params.id);
+  if (!row || typeof code !== 'string' || !row.erase_hash || !safeEqual(sha256(code), row.erase_hash)) {
+    return res.status(403).json({ error: 'invalid code' });
+  }
+  db.prepare('UPDATE reports SET contact_name = NULL, contact_phone = NULL WHERE id = ?').run(req.params.id);
+  audit('reporter', 'erase_contact', req.params.id);
+  res.json({ ok: true });
 });
 
 // GET /api/reports/:id

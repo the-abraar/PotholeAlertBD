@@ -57,6 +57,12 @@
     </thead>
     <tbody id="rows"></tbody>
   </table>
+  <h2>টোকেন / Tokens</h2>
+  <p class="muted">Rotate shows the new token once. Expiry is set from TOKEN_TTL_DAYS.</p>
+  <p id="newToken" class="muted"></p>
+  <table><thead><tr><th>Kind</th><th>Name</th><th>Email</th><th>Expires</th><th>State</th><th></th></tr></thead><tbody id="tokens"></tbody></table>
+  <h2>অডিট লগ / Audit log</h2>
+  <table><thead><tr><th>At</th><th>Actor</th><th>Action</th><th>Report</th><th>Detail</th></tr></thead><tbody id="audit"></tbody></table>
 
 <script>
 const API = location.origin + '/api';
@@ -131,7 +137,48 @@ async function load() {
   });
 }
 
+// Rows are built with textContent only, so no value is ever parsed as HTML.
+function cell(tr, text) { const td = document.createElement('td'); td.textContent = text ?? ''; tr.appendChild(td); return td; }
+function tokenBtn(td, label, kind, ref, act) {
+  const b = document.createElement('button');
+  b.className = 'secondary'; b.textContent = label;
+  b.onclick = async () => {
+    if (!confirm(label + ' ' + ref + '?')) return;
+    const res = await fetch(`${API}/reports/admin/tokens/${kind}/${encodeURIComponent(ref)}/${act}`, { method: 'POST', headers: { 'x-admin-token': getToken() } });
+    const j = await res.json().catch(() => ({}));
+    document.getElementById('newToken').textContent = j.token ? `${kind} ${ref} new token: ${j.token}` : (res.ok ? 'ok' : (j.error || 'failed'));
+    loadAdminExtras();
+  };
+  td.appendChild(b);
+}
+async function loadAdminExtras() {
+  const h = { 'x-admin-token': getToken() };
+  const [tr, ar] = await Promise.all([fetch(API + '/reports/admin/tokens', { headers: h }), fetch(API + '/reports/admin/audit?limit=100', { headers: h })]);
+  const tb = document.getElementById('tokens'), ab = document.getElementById('audit');
+  tb.replaceChildren(); ab.replaceChildren();
+  if (tr.ok) {
+    const t = await tr.json();
+    const add = (kind, ref, name, email, exp, off) => {
+      const row = document.createElement('tr');
+      cell(row, kind); cell(row, name); cell(row, email); cell(row, exp || 'never'); cell(row, off ? 'revoked' : 'active');
+      const td = cell(row, '');
+      if (!off) { tokenBtn(td, 'rotate', kind, ref, 'rotate'); tokenBtn(td, 'revoke', kind, ref, 'revoke'); }
+      tb.appendChild(row);
+    };
+    for (const a of t.admins) add('admin', a.name, a.name, '', a.expiresAt, a.disabled);
+    for (const a of t.authorities) add('authority', a.id, a.name, a.email, a.expiresAt, a.revoked);
+  }
+  if (ar.ok) {
+    for (const e of await ar.json()) {
+      const row = document.createElement('tr');
+      for (const v of [e.at, e.actor, e.action, e.report_id, e.detail]) cell(row, v);
+      ab.appendChild(row);
+    }
+  }
+}
 load();
+loadAdminExtras();
+document.getElementById('saveToken').addEventListener('click', loadAdminExtras);
 </script>
 </body>
 </html>

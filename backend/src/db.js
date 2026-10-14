@@ -58,6 +58,10 @@ db.exec(`
 try { db.exec('ALTER TABLE reports ADD COLUMN pre_flag_status TEXT'); } catch { /* already exists */ }
 
 try { db.exec('ALTER TABLE reports ADD COLUMN after_photo_filename TEXT'); } catch { /* already exists */ }
+for (const a of ['ALTER TABLE admins ADD COLUMN expires_at TEXT', 'ALTER TABLE authority_tokens ADD COLUMN expires_at TEXT',
+  'ALTER TABLE authority_tokens ADD COLUMN revoked INTEGER NOT NULL DEFAULT 0', 'ALTER TABLE reports ADD COLUMN erase_hash TEXT']) {
+  try { db.exec(a); } catch { /* already exists */ }
+}
 db.exec('CREATE INDEX IF NOT EXISTS idx_reports_authority ON reports(authority_name)');
 
 module.exports = db;

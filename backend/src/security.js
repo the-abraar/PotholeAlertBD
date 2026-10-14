@@ -87,14 +87,51 @@ function tokenGuard(name, header, prop, resolve) {
 const requireAdmin = tokenGuard('admin', 'x-admin-token', 'actor', (token) => {
   const root = process.env.ADMIN_TOKEN;
   if (root && safeEqual(token, root)) return 'root';
-  return db.prepare('SELECT name FROM admins WHERE token_hash = ? AND disabled = 0').get(sha256(token))?.name || null;
+  return db.prepare('SELECT name FROM admins WHERE token_hash = ? AND disabled = 0 AND (expires_at IS NULL OR expires_at > ?)')
+    .get(sha256(token), new Date().toISOString())?.name || null;
 });
 
 // Authority: token scoped to one authority name; req.authority = { name, email }.
 const requireAuthority = tokenGuard('authority', 'x-authority-token', 'authority', (token) => {
-  const r = db.prepare('SELECT authority_name, email FROM authority_tokens WHERE token_hash = ?').get(sha256(token));
+  const r = db.prepare('SELECT authority_name, email FROM authority_tokens WHERE token_hash = ? AND revoked = 0 AND (expires_at IS NULL OR expires_at > ?)')
+    .get(sha256(token), new Date().toISOString());
   return r ? { name: r.authority_name, email: r.email } : null;
 });
+
+// Tokens are stored hashed, so expiry is a column checked at lookup (TOKEN_TTL_DAYS, default 180; 0 = never).
+const newToken = () => crypto.randomBytes(24).toString('hex');
+function tokenExpiry() {
+  const d = Number(process.env.TOKEN_TTL_DAYS ?? 180);
+  return d > 0 ? new Date(Date.now() + d * 86_400_000).toISOString() : null;
+}
+
+// Never returns hashes. Authority tokens are addressed by rowid.
+function listTokens() {
+  return {
+    admins: db.prepare('SELECT name, created_at AS createdAt, expires_at AS expiresAt, disabled FROM admins ORDER BY name').all(),
+    authorities: db.prepare('SELECT rowid AS id, authority_name AS name, email, created_at AS createdAt, expires_at AS expiresAt, revoked FROM authority_tokens ORDER BY rowid').all(),
+  };
+}
+
+// Replaces the hash (old token dies at once) and resets expiry; returns the new token once, or null if no active row.
+function rotateToken(kind, ref, actor) {
+  const t = newToken();
+  const args = [sha256(t), tokenExpiry(), ref];
+  const { changes } = kind === 'admin'
+    ? db.prepare('UPDATE admins SET token_hash = ?, expires_at = ? WHERE name = ? AND disabled = 0').run(...args)
+    : db.prepare('UPDATE authority_tokens SET token_hash = ?, expires_at = ? WHERE rowid = ? AND revoked = 0').run(...args);
+  if (!changes) return null;
+  audit(actor, `rotate_${kind}_token`, null, { ref });
+  return t;
+}
+
+function revokeToken(kind, ref, actor) {
+  const { changes } = kind === 'admin'
+    ? db.prepare('UPDATE admins SET disabled = 1 WHERE name = ? AND disabled = 0').run(ref)
+    : db.prepare('UPDATE authority_tokens SET revoked = 1 WHERE rowid = ? AND revoked = 0').run(ref);
+  if (changes) audit(actor, `revoke_${kind}_token`, null, { ref });
+  return Number(changes) > 0;
+}
 
 const BAD_TOKENS = ['', 'changeme', 'admin', 'password', 'secret', 'test'];
 function assertProductionConfig() {
@@ -105,4 +142,4 @@ function assertProductionConfig() {
   }
 }
 
-module.exports = { sha256, audit, requireAuthority, ipKey, parseTrustProxy, rateLimit, securityHeaders, requireAdmin, safeEqual, assertProductionConfig };
+module.exports = { newToken, tokenExpiry, listTokens, rotateToken, revokeToken, sha256, audit, requireAuthority, ipKey, parseTrustProxy, rateLimit, securityHeaders, requireAdmin, safeEqual, assertProductionConfig };

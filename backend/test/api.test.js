@@ -299,3 +299,42 @@ test('retention erases old contact details only', () => {
   assert.ok(db.prepare('SELECT COUNT(*) c FROM reports WHERE contact_phone IS NOT NULL').get().c > 0); // recent ones kept
   assert.strictEqual(purgeContacts(90), 0);
 });
+
+test('token rotation, revoke, expiry and listing are audited; hashes never listed', async () => {
+  const db = require('../src/db');
+  const { sha256 } = require('../src/security');
+  db.prepare('INSERT INTO admins (name, token_hash, created_at) VALUES (?, ?, ?)').run('bob', sha256('bob-old'), 'now');
+  db.prepare('INSERT INTO authority_tokens (token_hash, authority_name, email, created_at) VALUES (?, ?, ?, ?)').run(sha256('auth-old'), 'X Auth', null, 'now');
+  const j = { ...adm, 'content-type': 'application/json' };
+  const list = await (await fetch(`${base}/api/reports/admin/tokens`, { headers: adm })).json();
+  assert.ok(list.admins.some((a) => a.name === 'bob') && !JSON.stringify(list).includes(sha256('bob-old')));
+  const aid = list.authorities.find((a) => a.name === 'X Auth').id;
+  const rot = await (await fetch(`${base}/api/reports/admin/tokens/admin/bob/rotate`, { method: 'POST', headers: j })).json();
+  assert.match(rot.token, /^[0-9a-f]{48}$/);
+  const get = (t) => fetch(`${base}/api/reports/admin/all`, { headers: { ...fwd('5.5.5.9'), 'x-admin-token': t } });
+  assert.strictEqual((await get('bob-old')).status, 401);
+  assert.strictEqual((await get(rot.token)).status, 200);
+  db.prepare("UPDATE admins SET expires_at = '2000-01-01T00:00:00.000Z' WHERE name = 'bob'").run();
+  assert.strictEqual((await get(rot.token)).status, 401);                       // expired
+  const ar = await fetch(`${base}/api/reports/admin/tokens/authority/${aid}/revoke`, { method: 'POST', headers: j });
+  assert.strictEqual(ar.status, 200);
+  const au = (t) => fetch(`${base}/api/authority/reports`, { headers: { ...fwd('5.5.5.8'), 'x-authority-token': t } });
+  assert.strictEqual((await au('auth-old')).status, 401);
+  assert.strictEqual((await fetch(`${base}/api/reports/admin/tokens/authority/${aid}/rotate`, { method: 'POST', headers: j })).status, 404); // revoked
+  assert.strictEqual((await fetch(`${base}/api/reports/admin/tokens/bogus/x/rotate`, { method: 'POST', headers: j })).status, 400);
+  const log = await (await fetch(`${base}/api/reports/admin/audit`, { headers: adm })).json();
+  for (const a of ['rotate_admin_token', 'revoke_authority_token']) assert.ok(log.some((e) => e.action === a && e.actor === 'root'));
+});
+
+test('reporter erases own contact with the deletion code', async () => {
+  const db = require('../src/db');
+  const r = await (await post(form({ lat: '23.7', lng: '90.35', contactName: 'Karim', contactPhone: '01711111111' }))).json();
+  assert.match(r.deletionCode, /^[0-9a-f]{48}$/);
+  assert.ok(!JSON.stringify(await (await fetch(`${base}/api/reports/${r.id}`)).json()).includes(r.deletionCode));
+  const erase = (code) => fetch(`${base}/api/reports/${r.id}/erase-contact`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
+  assert.strictEqual((await erase('wrong')).status, 403);
+  assert.strictEqual(db.prepare('SELECT contact_phone p FROM reports WHERE id = ?').get(r.id).p, '01711111111');
+  assert.strictEqual((await erase(r.deletionCode)).status, 200);
+  const row = db.prepare('SELECT contact_name n, contact_phone p FROM reports WHERE id = ?').get(r.id);
+  assert.ok(row.n === null && row.p === null);
+});

@@ -27,6 +27,7 @@ app.use('/api/', rateLimit({ name: 'api', windowMs: 60_000, max: 300 }));
 // Per-IP submission cap, separate from the global /api limit above.
 app.post('/api/reports', rateLimit({ name: 'submit', windowMs: 60 * 60_000, max: Number(process.env.REPORT_LIMIT_PER_HOUR) || 20 }));
 app.post('/api/reports/:id/flag', rateLimit({ name: 'flag', windowMs: 60 * 60_000, max: 10 }));
+app.post('/api/reports/:id/erase-contact', rateLimit({ name: 'erase', windowMs: 60 * 60_000, max: 10 }));
 // admin limits (30/min + failed-auth cap) live in requireAdmin, so they cover every admin route.
 app.use('/api/reports', reportsRouter);
 app.use('/api/stats', statsRouter);
