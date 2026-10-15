@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -69,6 +68,64 @@ Future<bool?> showContactConsentDialog(BuildContext context) {
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx, true),
           child: const Text('সম্মত / I agree'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> showDeletionCodeDialog(
+  BuildContext context, {
+  required String reportId,
+  required String code,
+}) {
+  final text = 'Report ID: $reportId\nDeletion code: $code';
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false, // shown once; make the reporter acknowledge it
+    builder: (ctx) => AlertDialog(
+      title: const Text('মুছে ফেলার কোড / Deletion code'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'রিপোর্ট আইডি ও এই কোড সংরক্ষণ করুন। এগুলো দিয়ে এই রিপোর্ট থেকে আপনার নাম ও ফোন নম্বর '
+              'সঙ্গে সঙ্গে মুছে ফেলা যায়; কীভাবে, তা গোপনীয়তা নীতিতে আছে। কোডটি আর দেখানো হবে না, '
+              'হারালে পুনরুদ্ধার করা যায় না। কাউকে দেবেন না।\n\n'
+              'Save the report ID and this code. With them you can erase your name and phone number '
+              'from this report at once; the privacy policy explains how. The code is shown only once '
+              'and cannot be recovered. Do not share it.',
+            ),
+            const SizedBox(height: 12),
+            SelectableText(text, style: const TextStyle(fontFamily: 'monospace')),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => launchUrl(
+            Uri.parse(ApiService.privacyUrl),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: const Text('গোপনীয়তা নীতি / Privacy policy'),
+        ),
+        TextButton.icon(
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: text));
+            if (ctx.mounted) {
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                const SnackBar(content: Text('কপি হয়েছে / Copied')),
+              );
+            }
+          },
+          icon: const Icon(Icons.copy),
+          label: const Text('কপি / Copy'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('সংরক্ষণ করেছি / Done'),
         ),
       ],
     ),
@@ -174,6 +231,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       return;
     }
 
+    final contactName = _contactConsent ? _contactNameCtrl.text.trim() : '';
+    final contactPhone = _contactConsent
+        ? _contactPhoneCtrl.text.trim().replaceAll(RegExp(r'[\s-]'), '')
+        : '';
     setState(() => _submitting = true);
     try {
       final report = await ApiService.submitReport(
@@ -185,16 +246,20 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         severity: _severity,
         description: _descriptionCtrl.text.trim(),
         placeNote: _placeNoteCtrl.text.trim(),
-        contactName: _contactConsent ? _contactNameCtrl.text.trim() : null,
-        contactPhone: _contactConsent
-            ? _contactPhoneCtrl.text.trim().replaceAll(RegExp(r'[\s-]'), '')
-            : null,
+        contactName: contactName,
+        contactPhone: contactPhone,
       );
       if (!mounted) return;
       context.read<ReportsProvider>().load();
       if (report.duplicate) {
         await _showDuplicate(report);
         return;
+      }
+      // The code only erases contact fields, so anonymous reporters are not shown it.
+      final code = report.deletionCode;
+      if (code != null && (contactName.isNotEmpty || contactPhone.isNotEmpty)) {
+        await showDeletionCodeDialog(context, reportId: report.id, code: code);
+        if (!mounted) return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('ধন্যবাদ! আপনার রিপোর্ট জমা হয়েছে।')),

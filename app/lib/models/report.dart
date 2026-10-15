@@ -18,6 +18,8 @@ class PotholeReport {
   final DateTime updatedAt;
   /// true when the backend merged this submission into an existing nearby report.
   final bool duplicate;
+  /// One-time code returned only by a fresh 201 submit; erases the reporter's name and phone.
+  final String? deletionCode;
 
   PotholeReport({
     required this.id,
@@ -38,6 +40,7 @@ class PotholeReport {
     required this.createdAt,
     required this.updatedAt,
     this.duplicate = false,
+    this.deletionCode,
   });
 
   factory PotholeReport.fromJson(Map<String, dynamic> json) {
@@ -60,6 +63,7 @@ class PotholeReport {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       duplicate: json['duplicate'] == true,
+      deletionCode: json['deletionCode'] as String?,
     );
   }
 }
