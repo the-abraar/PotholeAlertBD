@@ -1,6 +1,6 @@
 'use strict';
 
-// Usage: node scripts/manage.js add-admin <name> | disable-admin <name> | rotate-admin <name> | rotate-authority <id> | revoke-authority <id> | list-tokens | add-authority <authority name> [email] | digest | purge
+// Usage: node scripts/manage.js add-admin <name> | disable-admin <name> | rotate-admin <name> | rotate-authority <id> | revoke-authority <id> | list-tokens | add-authority <authority name> [email] | digest [--dry-run] | purge
 // Tokens are printed once; only their SHA-256 is stored.
 require('dotenv').config();
 const db = require('../src/db');
@@ -35,12 +35,14 @@ const now = () => new Date().toISOString();
     console.log(revokeToken('authority', Number(name), 'cli') ? 'revoked' : 'no such active authority token');
   } else if (cmd === 'list-tokens') {
     console.log(JSON.stringify(listTokens(), null, 2));
+  } else if (cmd === 'digest' && name === '--dry-run') { // print what would be sent, send nothing
+    console.log(JSON.stringify(require('../src/digest').buildDigests(), null, 2));
   } else if (cmd === 'digest') {
     console.log(await require('../src/digest').sendDigests());
   } else if (cmd === 'purge') {
     console.log(`erased contacts on ${require('../src/retention').purgeContacts()} reports`);
   } else {
-    console.error('usage: manage.js add-admin <name> | disable-admin <name> | rotate-admin <name> | rotate-authority <id> | revoke-authority <id> | list-tokens | add-authority <authority name> [email] | digest | purge');
+    console.error('usage: manage.js add-admin <name> | disable-admin <name> | rotate-admin <name> | rotate-authority <id> | revoke-authority <id> | list-tokens | add-authority <authority name> [email] | digest [--dry-run] | purge');
     process.exit(1);
   }
 })();

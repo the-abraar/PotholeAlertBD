@@ -101,7 +101,7 @@ const requireAuthority = tokenGuard('authority', 'x-authority-token', 'authority
 // Tokens are stored hashed, so expiry is a column checked at lookup (TOKEN_TTL_DAYS, default 180; 0 = never).
 const newToken = () => crypto.randomBytes(24).toString('hex');
 function tokenExpiry() {
-  const d = Number(process.env.TOKEN_TTL_DAYS ?? 180);
+  const d = Number(process.env.TOKEN_TTL_DAYS || 180); // empty means default, not "never"
   return d > 0 ? new Date(Date.now() + d * 86_400_000).toISOString() : null;
 }
 
