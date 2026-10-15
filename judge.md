@@ -255,3 +255,8 @@ The product question "who acts on a report, and why would they?" has not been an
 
 Done (`scripts/check.sh` exit 0): admin and authority tokens expire (`TOKEN_TTL_DAYS`, default 180) and can be rotated or revoked by CLI and API, all audited; token and audit-log tables in `admin.html` (textContent only); reporters get a one-time deletion code and `POST /api/reports/:id/erase-contact` erases name and phone; `privacy.html` updated.
 **Not done:** the Flutter app does not show the deletion code yet; the new CLI commands have no tests. Blockers 1-2 (authority contacts, polygons) and hosting are unchanged, so the score stays at 30%.
+
+### Update 12 (2026-10-15, agent round)
+
+Done (`scripts/check.sh` exit 0, backend 29 tests, Flutter 8): the app shows the report ID and one-time deletion code after a submit that included a name or phone (copy button, how to erase, explicit Done; widget test plus a model test for the `deletionCode` field); `privacy.html` and the About screen describe it. `backend/test/manage.test.js` runs `scripts/manage.js` against a temp SQLite DB and checks the tokens against the live API: TTL expiry (default 180, `0` = never), rotate, revoke/disable, `list-tokens` without hashes, audit rows, and the new `digest --dry-run` (prints the digests and sends nothing). Fixed: an empty `TOKEN_TTL_DAYS` made tokens never expire; it now means the default.
+**Not done:** the app has no erase button and does not store the code, so erasure still needs a manual `POST /api/reports/<id>/erase-contact` (the privacy policy says so). The navigation after the deletion-code dialog is not covered by a test. Blockers 1-2 (authority contacts, polygons) and hosting are unchanged, so the score stays at 30%.
