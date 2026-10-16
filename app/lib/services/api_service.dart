@@ -97,6 +97,32 @@ class ApiService {
     return PotholeReport.fromJson(jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>);
   }
 
+  /// Erases the reporter's name and phone from one report, authorised by its one-time deletion code.
+  /// Throws with a bilingual message on a wrong code (403), too many tries (429) or another failure.
+  static Future<void> eraseContact({required String reportId, required String code, http.Client? client}) async {
+    final c = client ?? http.Client();
+    try {
+      final http.Response res;
+      try {
+        res = await c.post(
+          Uri.parse('$baseUrl/api/reports/${Uri.encodeComponent(reportId)}/erase-contact'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'code': code}),
+        );
+      } on http.ClientException {
+        throw Exception('সার্ভারে পৌঁছানো যায়নি, ইন্টারনেট দেখে আবার চেষ্টা করুন / Could not reach the server; check your connection and try again');
+      }
+      if (res.statusCode == 200) return;
+      // The backend answers 403 for both an unknown report ID and a wrong code.
+      if (res.statusCode == 403) throw Exception('রিপোর্ট আইডি বা কোড মেলেনি / Report ID or code does not match');
+      // 429 comes from the erase limit (10 per hour per IP) or the global per-minute API limit.
+      if (res.statusCode == 429) throw Exception('অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ (এক ঘণ্টা পর্যন্ত) পরে আবার চেষ্টা করুন / Too many tries; try again later (up to an hour)');
+      throw Exception('মুছে ফেলা যায়নি (${res.statusCode}) / Could not erase');
+    } finally {
+      if (client == null) c.close();
+    }
+  }
+
   static String get privacyUrl => '$baseUrl/privacy';
 
   static String photoFullUrl(String relativeUrl) => '$baseUrl$relativeUrl';

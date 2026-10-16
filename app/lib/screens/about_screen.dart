@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'erase_contact_screen.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -37,8 +38,17 @@ class AboutScreen extends StatelessWidget {
             body:
                 'রিপোর্ট জমা দিতে কোনো অ্যাকাউন্ট বা লগইনের প্রয়োজন নেই। নাম ও ফোন নম্বর সম্পূর্ণ ঐচ্ছিক এবং '
                 'জনসমক্ষে প্রকাশ করা হয় না — শুধু প্রয়োজনে কর্তৃপক্ষের অনুসরণের জন্য রাখা হতে পারে। নাম বা ফোন দিলে জমার পর '
-                'একটি এককালীন মুছে ফেলার কোড দেখানো হয়; তা দিয়ে নাম ও ফোন মুছে ফেলা যায় (বিস্তারিত গোপনীয়তা নীতিতে)।',
+                'একটি এককালীন মুছে ফেলার কোড দেখানো হয়; তা দিয়ে নিচের বোতাম থেকে নাম ও ফোন মুছে ফেলা যায়।',
           ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.person_remove_outlined),
+              label: const Text('আমার নাম ও ফোন মুছুন / Erase my contact details'),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EraseContactScreen())),
+            ),
+          ),
+          const SizedBox(height: 12),
           const _Section(
             title: 'গুরুত্বপূর্ণ দাবিত্যাগ',
             body:

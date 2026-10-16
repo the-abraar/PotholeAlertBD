@@ -92,10 +92,10 @@ Future<void> showDeletionCodeDialog(
           children: [
             const Text(
               'রিপোর্ট আইডি ও এই কোড সংরক্ষণ করুন। এগুলো দিয়ে এই রিপোর্ট থেকে আপনার নাম ও ফোন নম্বর '
-              'সঙ্গে সঙ্গে মুছে ফেলা যায়; কীভাবে, তা গোপনীয়তা নীতিতে আছে। কোডটি আর দেখানো হবে না, '
+              'সঙ্গে সঙ্গে মুছে ফেলা যায়: "সম্পর্কে" পাতার "আমার নাম ও ফোন মুছুন" বোতাম ব্যবহার করুন। কোডটি আর দেখানো হবে না, '
               'হারালে পুনরুদ্ধার করা যায় না। কাউকে দেবেন না।\n\n'
               'Save the report ID and this code. With them you can erase your name and phone number '
-              'from this report at once; the privacy policy explains how. The code is shown only once '
+              'from this report at once: use "Erase my contact details" on the About screen. The code is shown only once '
               'and cannot be recovered. Do not share it.',
             ),
             const SizedBox(height: 12),
