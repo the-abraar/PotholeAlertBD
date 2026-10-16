@@ -127,7 +127,7 @@ flutter build web --release        # যেকোনো স্ট্যাটি
 - **Authority inbox.** `/authority.html` lets one authority see only its own reports, never contact fields or hidden reports (`/api/authority/*`, header `x-authority-token`). Create one with `node scripts/manage.js add-authority "<authority name>" [email]`.
 - **Tokens.** Tokens are printed once; only their SHA-256 is stored. They expire after `TOKEN_TTL_DAYS` (default 180).
 - **Digest.** `node scripts/manage.js digest` emails each authority its new reports (run it from cron; it needs SMTP and `PUBLIC_URL`). `digest --dry-run` prints what it would send and sends nothing.
-- **Reporter privacy.** After submitting, the app shows a one-time deletion code. `POST /api/reports/:id/erase-contact {code}` uses it to erase the reporter's name and phone. Contacts are also erased automatically after `CONTACT_RETENTION_DAYS` (default 90); `manage.js purge` runs that erasure now.
+- **Reporter privacy.** After submitting, the app shows a one-time deletion code. The app's About → "Erase my contact details" screen (or `POST /api/reports/:id/erase-contact {code}`) uses it to erase the reporter's name and phone; the app does not store the code. Contacts are also erased automatically after `CONTACT_RETENTION_DAYS` (default 90); `manage.js purge` runs that erasure now.
 - **Abuse.** `POST /api/reports/:id/flag` lets the public flag a report; enough flags from distinct IPs hide it automatically, and admins can unhide it. Rate limits are stored in SQLite (300 API calls per minute per IP, tighter limits on submit, flag and erase). Set `TRUST_PROXY` behind a reverse proxy.
 
 Full command list: `node scripts/manage.js` (see the usage line at the top of `scripts/manage.js`). Tests: `cd backend && npm test`.
