@@ -120,3 +120,14 @@ flutter build web --release        # যেকোনো স্ট্যাটি
 - `CORS_ORIGINS` (comma-separated) sets the CORS allow-list; unset means same-origin only.
 - `GET /api/reports` and `GET /api/reports/admin/all` accept `limit` (default 50, max 200) and `offset`; total count is in the `X-Total-Count` header. Body stays a JSON array.
 - Duplicate reports (same road type, within `DUP_RADIUS_M`=30 m, within `DUP_WINDOW_HOURS`=24 h) are not stored: `POST /api/reports` returns 200 with the existing report plus `duplicate: true` (new reports return 201).
+
+## Admins, authorities and privacy
+
+- **Admins.** The shared `ADMIN_TOKEN` signs in as `root`. Per-admin tokens are created with `node scripts/manage.js add-admin <name>`. The admin panel (`/admin.html`) shows reports, the token list (rotate/revoke) and the audit log (`GET /api/reports/admin/tokens`, `/admin/audit`). Every admin action is logged.
+- **Authority inbox.** `/authority.html` lets one authority see only its own reports, never contact fields or hidden reports (`/api/authority/*`, header `x-authority-token`). Create one with `node scripts/manage.js add-authority "<authority name>" [email]`.
+- **Tokens.** Tokens are printed once; only their SHA-256 is stored. They expire after `TOKEN_TTL_DAYS` (default 180).
+- **Digest.** `node scripts/manage.js digest` emails each authority its new reports (run it from cron; it needs SMTP and `PUBLIC_URL`). `digest --dry-run` prints what it would send and sends nothing.
+- **Reporter privacy.** After submitting, the app shows a one-time deletion code. `POST /api/reports/:id/erase-contact {code}` uses it to erase the reporter's name and phone. Contacts are also erased automatically after `CONTACT_RETENTION_DAYS` (default 90); `manage.js purge` runs that erasure now.
+- **Abuse.** `POST /api/reports/:id/flag` lets the public flag a report; enough flags from distinct IPs hide it automatically, and admins can unhide it. Rate limits are stored in SQLite (300 API calls per minute per IP, tighter limits on submit, flag and erase). Set `TRUST_PROXY` behind a reverse proxy.
+
+Full command list: `node scripts/manage.js` (see the usage line at the top of `scripts/manage.js`). Tests: `cd backend && npm test`.
