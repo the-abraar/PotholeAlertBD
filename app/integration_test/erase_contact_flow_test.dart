@@ -5,7 +5,7 @@
 //   flutter test integration_test/erase_contact_flow_test.dart -d <device id>
 // Android emulators reach the host at 10.0.2.2 automatically; a real phone needs
 // --dart-define=API_BASE_URL=http://<host LAN IP>:4000.
-// iOS: the simulator build needs IPHONEOS_DEPLOYMENT_TARGET >= 15.0 on current Xcode (it is 13.0 now).
+// iOS: the simulator build needs IPHONEOS_DEPLOYMENT_TARGET >= 15.0 on current Xcode (set to 15.0).
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
