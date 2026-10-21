@@ -132,6 +132,20 @@ Future<void> showDeletionCodeDialog(
   );
 }
 
+/// After a new (non-duplicate) report: show the one-time deletion code when the reporter gave a name or phone,
+/// then thank them and close the form. The code only erases contact fields, so anonymous reporters are not shown it.
+Future<void> finishSubmit(BuildContext context, PotholeReport report, {required bool hadContact}) async {
+  final code = report.deletionCode;
+  if (code != null && hadContact) {
+    await showDeletionCodeDialog(context, reportId: report.id, code: code);
+    if (!context.mounted) return;
+  }
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('ধন্যবাদ! আপনার রিপোর্ট জমা হয়েছে।')),
+  );
+  Navigator.of(context).pop();
+}
+
 /// Bangladeshi mobile: 01[3-9]xxxxxxxx, optionally with +88 / 88 prefix.
 final RegExp kBdPhone = RegExp(r'^(?:\+?88)?01[3-9]\d{8}$');
 
@@ -255,16 +269,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         await _showDuplicate(report);
         return;
       }
-      // The code only erases contact fields, so anonymous reporters are not shown it.
-      final code = report.deletionCode;
-      if (code != null && (contactName.isNotEmpty || contactPhone.isNotEmpty)) {
-        await showDeletionCodeDialog(context, reportId: report.id, code: code);
-        if (!mounted) return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ধন্যবাদ! আপনার রিপোর্ট জমা হয়েছে।')),
-      );
-      Navigator.of(context).pop();
+      await finishSubmit(context, report, hadContact: contactName.isNotEmpty || contactPhone.isNotEmpty);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));

@@ -226,4 +226,4 @@ The targets below are proposals. No baseline exists today.
 3. Select a host. Set up HTTPS, backups and an uptime check. (C-4)
 4. Build and test the app on real Android and iOS phones. (NFR-21)
 5. Get a legal review of the privacy page. (NFR-10)
-6. Write a plan for photo moderation and for blurring faces and number plates. (C-7)
+6. Write a plan for photo moderation and for blurring faces and number plates. (C-7) The blurring plan is in `PHOTO_BLUR_PLAN.md`. Photo moderation has no plan yet.

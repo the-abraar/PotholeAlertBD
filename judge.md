@@ -270,3 +270,8 @@ Done (`scripts/check.sh` exit 0; Flutter 12 tests, 4 new): reporters can erase t
 **Not run on a device:** the iOS simulator build fails because `IPHONEOS_DEPLOYMENT_TARGET = 13.0` in `app/ios/Runner.xcodeproj` is below the current Xcode minimum (15.0). That is a separate fix. No Android emulator is set up.
 
 **2026-10-21 (agent round):** `app/integration_test/erase_contact_flow_test.dart` PASSED on an iOS 27.0 simulator (iPhone 17, fresh device, deleted afterwards) against a local backend (`node src/server.js`, temp `DB_PATH`/`UPLOAD_DIR`): wrong code got the 403 message, the pasted copy text erased the contact, and the DB row's `contact_name`/`contact_phone` are NULL. Xcode build 103 s, test 5 s. No harness or app changes needed; the 15.0 deployment target (`c856927`) unblocked the build.
+
+### Update 14 (2026-10-22, agent round)
+
+Done (`scripts/check.sh` exit 0; Flutter 15 tests, 3 new): `PHOTO_BLUR_PLAN.md` is the face and plate blurring plan from Update 8 step 7 (plan only: options, on-device vs server, privacy trade-offs, tests; it recommends admin-first photos until server-side blurring exists, then server enforcement, then on-device as an extra layer). The navigation after the deletion-code dialog now has widget tests: the form stays open behind the dialog, Done closes the form back to the previous screen with the thank-you snackbar, and an anonymous report or a missing code closes it with no dialog. To test it, that tail of `_submit` moved to the top-level `finishSubmit` in `report_form_screen.dart`, like the dialogs before it.
+**Not done:** a photo-moderation plan for illegal images; the "View it" navigation after the duplicate dialog is still untested. Blockers 1-2 and hosting are unchanged, so the score stays at 30%.

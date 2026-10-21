@@ -108,6 +108,68 @@ void main() {
     expect(closed, isTrue);
   });
 
+  group('navigation after submit', () {
+    PotholeReport report({String? code}) => PotholeReport.fromJson({
+          'id': 'r-1', 'photoUrl': '/uploads/x.png', 'lat': 23.8, 'lng': 90.4, 'roadType': 'city_road',
+          'roadTypeLabel': 'City road', 'severity': 'medium', 'authorityName': 'X', 'status': 'new',
+          'createdAt': '2026-10-15T00:00:00.000Z', 'updatedAt': '2026-10-15T00:00:00.000Z',
+          'deletionCode': ?code,
+        });
+
+    /// Home screen with a button that pushes a stand-in form route, whose button calls [finishSubmit].
+    Future<void> pumpForm(WidgetTester tester, PotholeReport r, {required bool hadContact}) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (home) => Scaffold(
+            body: Column(children: [
+              const Text('home'),
+              ElevatedButton(
+                onPressed: () => Navigator.of(home).push(MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    body: Builder(
+                      builder: (form) => ElevatedButton(
+                        onPressed: () => finishSubmit(form, r, hadContact: hadContact),
+                        child: const Text('submit'),
+                      ),
+                    ),
+                  ),
+                )),
+                child: const Text('open form'),
+              ),
+            ]),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('open form'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('submit'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('form stays open behind the code dialog, Done closes it and thanks the reporter', (tester) async {
+      await pumpForm(tester, report(code: 'abc123'), hadContact: true);
+      expect(find.text('Report ID: r-1\nDeletion code: abc123'), findsOneWidget);
+      expect(find.text('submit', skipOffstage: false), findsOneWidget); // form route still under the dialog
+
+      await tester.tap(find.textContaining('Done'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Deletion code'), findsNothing);
+      expect(find.text('submit', skipOffstage: false), findsNothing); // form popped
+      expect(find.text('home'), findsOneWidget);
+      expect(find.textContaining('ধন্যবাদ'), findsOneWidget); // snackbar survives the pop
+    });
+
+    for (final (name, code, hadContact) in [('anonymous report', 'abc123', false), ('no code returned', null, true)]) {
+      testWidgets('$name: no dialog, the form closes straight away', (tester) async {
+        await pumpForm(tester, report(code: code), hadContact: hadContact);
+        expect(find.textContaining('Deletion code'), findsNothing);
+        expect(find.text('submit', skipOffstage: false), findsNothing);
+        expect(find.text('home'), findsOneWidget);
+        expect(find.textContaining('ধন্যবাদ'), findsOneWidget);
+      });
+    }
+  });
+
   test('deletionCode is read from the backend 201 response field', () {
     final json = {
       'id': 'r-1', 'photoUrl': '/uploads/x.png', 'lat': 23.8, 'lng': 90.4, 'roadType': 'city_road',
