@@ -146,6 +146,17 @@ Future<void> finishSubmit(BuildContext context, PotholeReport report, {required 
   Navigator.of(context).pop();
 }
 
+/// After a duplicate hit: close the form, and open the existing report if the reporter chose "View it".
+Future<void> handleDuplicate(BuildContext context, PotholeReport existing) async {
+  final nav = Navigator.of(context);
+  final view = await showDuplicateDialog(context);
+  if (!context.mounted) return;
+  nav.pop();
+  if (view == true) {
+    nav.push(MaterialPageRoute(builder: (_) => ReportDetailScreen(report: existing)));
+  }
+}
+
 /// Bangladeshi mobile: 01[3-9]xxxxxxxx, optionally with +88 / 88 prefix.
 final RegExp kBdPhone = RegExp(r'^(?:\+?88)?01[3-9]\d{8}$');
 
@@ -278,17 +289,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     }
   }
 
-  Future<void> _showDuplicate(PotholeReport existing) async {
-    final nav = Navigator.of(context);
-    final view = await showDuplicateDialog(context);
-    if (!mounted) return;
-    nav.pop();
-    if (view == true) {
-      nav.push(
-        MaterialPageRoute(builder: (_) => ReportDetailScreen(report: existing)),
-      );
-    }
-  }
+  Future<void> _showDuplicate(PotholeReport existing) => handleDuplicate(context, existing);
 
   Future<void> _askContactConsent() async {
     final ok = await showContactConsentDialog(context);

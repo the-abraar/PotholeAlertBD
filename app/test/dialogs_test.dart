@@ -3,9 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:potholealert_app/models/report.dart';
 
+import 'package:potholealert_app/screens/report_detail_screen.dart';
 import 'package:potholealert_app/screens/report_form_screen.dart';
 
 /// Opens [open] from a button and returns a getter for the dialog result.
@@ -168,6 +170,65 @@ void main() {
         expect(find.textContaining('ধন্যবাদ'), findsOneWidget);
       });
     }
+  });
+
+  group('navigation after the duplicate dialog', () {
+    final existing = PotholeReport.fromJson({
+      'id': 'r-9', 'photoUrl': '/uploads/x.png', 'lat': 23.8, 'lng': 90.4, 'roadType': 'city_road',
+      'roadTypeLabel': 'City road', 'severity': 'medium', 'authorityName': 'X', 'status': 'new',
+      'createdAt': '2026-10-15T00:00:00.000Z', 'updatedAt': '2026-10-15T00:00:00.000Z', 'duplicate': true,
+    });
+
+    // Home pushes a stand-in form route whose button calls [handleDuplicate], as the real form does.
+    Future<void> pumpDuplicate(WidgetTester tester, String choice) async {
+      await initializeDateFormatting('bn');
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (home) => Scaffold(
+            body: Column(children: [
+              const Text('home'),
+              ElevatedButton(
+                onPressed: () => Navigator.of(home).push(MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    body: Builder(
+                      builder: (form) => ElevatedButton(
+                        onPressed: () => handleDuplicate(form, existing),
+                        child: const Text('submit'),
+                      ),
+                    ),
+                  ),
+                )),
+                child: const Text('open form'),
+              ),
+            ]),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('open form'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('submit'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining(choice));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('"View it" replaces the form with the existing report detail', (tester) async {
+      await pumpDuplicate(tester, 'View it');
+      expect(find.byType(ReportDetailScreen), findsOneWidget);
+      expect(tester.widget<ReportDetailScreen>(find.byType(ReportDetailScreen)).report.id, 'r-9');
+      expect(find.text('submit', skipOffstage: false), findsNothing); // form popped
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget); // back goes home, not to the form
+    });
+
+    testWidgets('OK just closes the form, no detail screen', (tester) async {
+      await pumpDuplicate(tester, 'OK');
+      expect(find.byType(ReportDetailScreen), findsNothing);
+      expect(find.text('submit', skipOffstage: false), findsNothing);
+      expect(find.text('home'), findsOneWidget);
+    });
   });
 
   test('deletionCode is read from the backend 201 response field', () {
