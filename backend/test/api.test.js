@@ -361,3 +361,20 @@ test('DISABLE_ROOT_TOKEN rejects the shared token, per-admin tokens still work, 
   }
   assert.strictEqual((await get('test-admin-token-1234')).status, 200);
 });
+
+test('retention period is configurable and bad values fall back to 90 days', () => {
+  const db = require('../src/db');
+  const { purgeContacts, retentionDays } = require('../src/retention');
+  for (const [v, d] of [['30', 30], ['0.5', 0.5], ['', 90], ['abc', 90], ['0', 90], ['-5', 90], [undefined, 90]]) assert.strictEqual(retentionDays(v), d, String(v));
+  // a 10-day-old report: kept at 90 days, erased (name and phone, not the report) at 7
+  db.prepare("UPDATE reports SET contact_name = 'Old', contact_phone = '01711111111', created_at = ? WHERE id = (SELECT id FROM reports ORDER BY id LIMIT 1)")
+    .run(new Date(Date.now() - 10 * 86_400_000).toISOString());
+  const id = db.prepare("SELECT id FROM reports WHERE contact_phone = '01711111111'").get().id;
+  process.env.CONTACT_RETENTION_DAYS = '90';
+  assert.strictEqual(purgeContacts(), 0);
+  process.env.CONTACT_RETENTION_DAYS = '7';
+  try { assert.ok(purgeContacts() >= 1); } finally { delete process.env.CONTACT_RETENTION_DAYS; }
+  const row = db.prepare('SELECT contact_name, contact_phone FROM reports WHERE id = ?').get(id);
+  assert.deepStrictEqual({ ...row }, { contact_name: null, contact_phone: null });
+  assert.ok(db.prepare("SELECT 1 FROM audit_log WHERE action = 'purge_contacts' AND actor = 'system'").get());
+});
