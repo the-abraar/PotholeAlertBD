@@ -181,10 +181,12 @@ router.get('/admin/all', requireAdmin, (req, res) => {
   res.json(rows.map(serializeAdminReport));
 });
 
-// GET /api/reports/admin/audit  (admin only) newest first
+// GET /api/reports/admin/audit  (admin only) newest first; ?actor= filters
 router.get('/admin/audit', requireAdmin, (req, res) => {
   const { limit, offset } = page(req.query);
-  res.json(db.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?').all(limit, offset));
+  // optional ?actor= filter (e.g. one admin's actions)
+  const actor = typeof req.query.actor === 'string' ? req.query.actor : null;
+  res.json(db.prepare('SELECT * FROM audit_log WHERE (? IS NULL OR actor = ?) ORDER BY id DESC LIMIT ? OFFSET ?').all(actor, actor, limit, offset));
 });
 
 // GET /api/reports/admin/tokens  (admin only) admins and authority tokens, never hashes

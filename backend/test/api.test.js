@@ -338,3 +338,26 @@ test('reporter erases own contact with the deletion code', async () => {
   const row = db.prepare('SELECT contact_name n, contact_phone p FROM reports WHERE id = ?').get(r.id);
   assert.ok(row.n === null && row.p === null);
 });
+
+test('DISABLE_ROOT_TOKEN rejects the shared token, per-admin tokens still work, audit filters by actor', async () => {
+  const db = require('../src/db');
+  const { sha256, requireAdmin } = require('../src/security');
+  db.prepare('INSERT OR REPLACE INTO admins (name, token_hash, created_at) VALUES (?, ?, ?)').run('bob', sha256('bob-token'), 'now');
+  const get = (t, q = '') => fetch(`${base}/api/reports/admin/audit${q}`, { headers: { ...fwd('4.4.4.4'), 'x-admin-token': t } });
+  process.env.DISABLE_ROOT_TOKEN = '1';
+  try {
+    assert.strictEqual((await get('test-admin-token-1234')).status, 401);
+    const ok = await get('bob-token', '?actor=alice');
+    assert.strictEqual(ok.status, 200);
+    assert.ok((await ok.json()).every((e) => e.actor === 'alice'));
+    // production check: needs an enabled admin, not ADMIN_TOKEN
+    process.env.NODE_ENV = 'production'; delete process.env.ADMIN_TOKEN;
+    assert.doesNotThrow(assertProductionConfig);
+    db.prepare('UPDATE admins SET disabled = 1').run();
+    assert.throws(assertProductionConfig, /no enabled admin/);
+  } finally {
+    delete process.env.DISABLE_ROOT_TOKEN; delete process.env.NODE_ENV; process.env.ADMIN_TOKEN = 'test-admin-token-1234';
+    db.prepare('UPDATE admins SET disabled = 0').run();
+  }
+  assert.strictEqual((await get('test-admin-token-1234')).status, 200);
+});

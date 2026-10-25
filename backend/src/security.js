@@ -83,9 +83,12 @@ function tokenGuard(name, header, prop, resolve) {
   });
 }
 
+// DISABLE_ROOT_TOKEN=1 finishes the migration to per-admin accounts: the shared ADMIN_TOKEN stops working.
+const rootEnabled = () => !/^(1|true|yes)$/i.test(process.env.DISABLE_ROOT_TOKEN || '');
+
 // Admin: the shared ADMIN_TOKEN acts as 'root'; per-admin tokens (hashed in `admins`) act as their name.
 const requireAdmin = tokenGuard('admin', 'x-admin-token', 'actor', (token) => {
-  const root = process.env.ADMIN_TOKEN;
+  const root = rootEnabled() ? process.env.ADMIN_TOKEN : null;
   if (root && safeEqual(token, root)) return 'root';
   return db.prepare('SELECT name FROM admins WHERE token_hash = ? AND disabled = 0 AND (expires_at IS NULL OR expires_at > ?)')
     .get(sha256(token), new Date().toISOString())?.name || null;
@@ -137,6 +140,10 @@ const BAD_TOKENS = ['', 'changeme', 'admin', 'password', 'secret', 'test'];
 function assertProductionConfig() {
   if (process.env.NODE_ENV !== 'production') return;
   const t = process.env.ADMIN_TOKEN;
+  if (!rootEnabled()) {
+    if (!db.prepare('SELECT 1 FROM admins WHERE disabled = 0').get()) throw new Error('DISABLE_ROOT_TOKEN is set but no enabled admin exists; run: node scripts/manage.js add-admin <name>');
+    return;
+  }
   if (!t || t.length < 16 || BAD_TOKENS.includes(t.toLowerCase()) || /^change-?me/i.test(t)) {
     throw new Error('ADMIN_TOKEN must be set to a random value (>=16 chars) in production');
   }
