@@ -284,3 +284,8 @@ Update 8 steps 5 and 7 listed per-admin accounts, a shared rate-limit store, pho
 - **Shared store:** rate limits, failed-auth counters and flag dedupe were already in SQLite. New test runs three separate processes on one DB file: the limit and flag dedupe persist across them. "Shared" means one DB file; multiple hosts still need a different store (Redis or Postgres).
 - **Retention:** `CONTACT_RETENTION_DAYS` already worked. Fixed a hazard: a negative value would have erased all contacts; non-positive or junk values now fall back to 90. Test covers the config and the audit row.
 **Not done / skipped:** real jurisdiction data, authority contacts, hosting (blockers 1, 2, 4 unchanged, score stays 30%); retention does not touch `flags.ip` rows or audit-log details; no UI to create admins (CLI only). New code has had no human review.
+
+### Update 16 (2026-10-27, agent round)
+
+Re-checked Update 8 code steps 3, 5 and 7: all were built in Updates 10-15 (authority inbox with after photo, digest via `manage.js digest`, per-admin tokens and audit log, rate limits and flag dedupe in SQLite, contact retention and self-erasure, dialog widget tests, `PHOTO_BLUR_PLAN.md`). One gap fixed (`5e157e6`): the authority status PATCH awaited the photo save between its read and its write, so an admin hide in that window was overwritten; it is now compare-and-set (409, new photo deleted), with a test. Proof: `scripts/check.sh` exit 0 (backend 33, Flutter 17). Not pushed.
+**Still open:** steps 1, 2, 4, 6 (yours); a moderation plan for illegal images; the other report UPDATEs in `routes/reports.js` are not compare-and-set (they are synchronous, so safe on one process only). Score stays 30%.
