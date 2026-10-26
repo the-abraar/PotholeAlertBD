@@ -285,6 +285,26 @@ test('authority inbox: scoped to its own reports, no contacts, resolve needs aft
   assert.match(j.afterPhotoUrl, /^\/uploads\/[0-9a-f-]{36}\.png$/);
 });
 
+test('authority inbox: 409 and no orphan photo when the report changes during the upload', async (t) => {
+  const db = require('../src/db');
+  const photos = require('../src/photos');
+  const r = await (await post(form({ lat: '23.81', lng: '90.41', roadType: 'rural_road' }))).json();
+  const real = photos.savePhoto;
+  let saved;
+  t.mock.method(photos, 'savePhoto', async (buf) => {
+    saved = await real(buf);
+    db.prepare("UPDATE reports SET status = 'hidden' WHERE id = ?").run(r.id); // admin hides it mid-upload
+    return saved;
+  });
+  const f = new FormData(); f.append('status', 'resolved'); f.append('photo', new Blob([PNG], { type: 'image/png' }), 'a.png');
+  const res = await fetch(`${base}/api/authority/reports/${r.id}`, { method: 'PATCH', headers: { ...fwd('5.5.5.3'), 'x-authority-token': 'lged-token' }, body: f });
+  assert.strictEqual(res.status, 409);
+  const row = db.prepare('SELECT status, after_photo_filename FROM reports WHERE id = ?').get(r.id);
+  assert.strictEqual(row.status, 'hidden');
+  assert.strictEqual(row.after_photo_filename, null);
+  assert.ok(!fs.existsSync(path.join(photos.UPLOAD_DIR, saved.filename)));
+});
+
 test('digest lists open reports per authority with an email', () => {
   const { buildDigests } = require('../src/digest');
   const d = buildDigests();

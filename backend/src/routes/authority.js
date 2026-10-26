@@ -4,7 +4,8 @@ const express = require('express');
 
 const db = require('../db');
 const { requireAuthority, audit } = require('../security');
-const { upload, savePhoto, removePhotos } = require('../photos');
+const photos = require('../photos'); // savePhoto via the module so a test can stub it
+const { upload, removePhotos } = photos;
 const { serializeReport } = require('../serialize');
 
 const router = express.Router();
@@ -31,13 +32,18 @@ router.patch('/reports/:id', (req, res, next) => upload.single('photo')(req, res
 
   let after = row.after_photo_filename;
   if (req.file) {
-    const saved = await savePhoto(req.file.buffer);
+    const saved = await photos.savePhoto(req.file.buffer);
     if (saved.error) return res.status(saved.status).json({ error: saved.error });
-    removePhotos(after);
     after = saved.filename;
   }
-  db.prepare('UPDATE reports SET status = ?, after_photo_filename = ?, updated_at = ? WHERE id = ?')
-    .run(status, after, new Date().toISOString(), row.id);
+  // Compare-and-set: savePhoto awaits, so an admin may hide/flag the report (or another call change it) meanwhile.
+  const { changes } = db.prepare('UPDATE reports SET status = ?, after_photo_filename = ?, updated_at = ? WHERE id = ? AND status = ? AND after_photo_filename IS ?')
+    .run(status, after, new Date().toISOString(), row.id, row.status, row.after_photo_filename);
+  if (!changes) {
+    if (after !== row.after_photo_filename) removePhotos(after);
+    return res.status(409).json({ error: 'report changed, reload and retry' });
+  }
+  if (after !== row.after_photo_filename) removePhotos(row.after_photo_filename);
   audit(`authority:${req.authority.name}`, 'set_status', row.id, { from: row.status, to: status });
   res.json(serializeReport(db.prepare('SELECT * FROM reports WHERE id = ?').get(row.id)));
 });
