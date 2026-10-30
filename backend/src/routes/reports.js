@@ -84,6 +84,8 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
     const saved = await savePhoto(req.file.buffer);
     if (saved.error) return res.status(saved.status).json({ error: saved.error });
     const filename = saved.filename;
+    // Held = private until an admin approves (unhide): the detector failed, or PHOTO_REVIEW=1 (PHOTO_BLUR_PLAN.md step 1).
+    const held = saved.held || process.env.PHOTO_REVIEW === '1';
     const id = uuidv4();
     const deletionCode = newToken(); // shown once; only its hash is stored
     const now = new Date().toISOString();
@@ -92,10 +94,10 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
       INSERT INTO reports (
         id, photo_filename, lat, lng, division_key, division_name,
         road_type, place_note, severity, description,
-        contact_name, contact_phone, authority_name, status, created_at, updated_at, erase_hash
+        contact_name, contact_phone, authority_name, status, pre_flag_status, created_at, updated_at, erase_hash
       ) VALUES (@id, @photo_filename, @lat, @lng, @division_key, @division_name,
         @road_type, @place_note, @severity, @description,
-        @contact_name, @contact_phone, @authority_name, @status, @created_at, @updated_at, @erase_hash)
+        @contact_name, @contact_phone, @authority_name, @status, @pre_flag_status, @created_at, @updated_at, @erase_hash)
     `).run({
       id,
       photo_filename: filename,
@@ -110,7 +112,8 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
       contact_name: contactName || null,
       contact_phone: contactPhone || null,
       authority_name: authority.name,
-      status: 'new',
+      status: held ? 'hidden' : 'new',
+      pre_flag_status: held ? 'new' : null,
       created_at: now,
       updated_at: now,
       erase_hash: sha256(deletionCode),
@@ -118,7 +121,8 @@ router.post('/', (req, res, next) => upload.single('photo')(req, res, (err) => {
 
     // Attempt to forward. Never blocks the response on failure.
     const row = db.prepare('SELECT * FROM reports WHERE id = ?').get(id);
-    forwardToAuthority(row).catch(() => {});
+    if (held) audit('system', 'photo_held', id, { reason: saved.held ? 'detector_failed' : 'review' });
+    else forwardToAuthority(row).catch(() => {}); // a held photo must not leave by email
 
     return res.status(201).json({ ...serializeReport(row), deletionCode });
   } catch (err) {

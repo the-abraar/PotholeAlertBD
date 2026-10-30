@@ -1,6 +1,6 @@
 # Face and licence-plate blurring plan
 
-Status: plan only, no code (2026-10-22). Closes the "blurring plan" half of judge.md Update 8, step 7, and PRD.md section 9, item 6 (constraint C-7). Image moderation for illegal content is a separate problem and is not covered here.
+Status (2026-10-30): the pipeline is built, with no model. `PHOTO_REVIEW=1` (step 1) and the `PHOTO_DETECTOR` hook in `savePhoto` (step 2: mean-colour fill of each box +20%, fail closed, only the blurred file is written, both paths) are in `backend/src/photos.js` with tests. Not done: a face or plate model, the accuracy set, load numbers, on-device blurring. Written 2026-10-22 as a plan. Closes the "blurring plan" half of judge.md Update 8, step 7, and PRD.md section 9, item 6 (constraint C-7). Image moderation for illegal content is a separate problem and is not covered here.
 
 ## Today
 
