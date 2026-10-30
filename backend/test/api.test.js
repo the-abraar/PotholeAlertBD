@@ -409,6 +409,7 @@ test('blurRegions: padded box becomes one flat colour, the rest is untouched', a
   const px = async (b, l, t) => (await sharp(b).extract({ left: l, top: t, width: 1, height: 1 }).removeAlpha().raw().toBuffer()).toString('hex');
   assert.strictEqual(await px(out, 30, 30), await px(img, 30, 30));
   await assert.rejects(blurRegions(img, [{ x: NaN, y: 0, w: 5, h: 5 }])); // bad box fails closed, never skipped
+  await assert.rejects(blurRegions(img, [{ x: 100, y: 100, w: 5, h: 5 }])); // box outside the image too
 });
 
 test('detector: boxes are blurred before the file is written; failure keeps the report private', async (t) => {

@@ -37,7 +37,7 @@ async function blurRegions(buffer, boxes) {
     if (![b.x, b.y, b.w, b.h].every(Number.isFinite)) throw new Error('detector returned a bad box'); // fail closed, never skip
     const left = Math.max(0, Math.floor(b.x - b.w * 0.2)), top = Math.max(0, Math.floor(b.y - b.h * 0.2));
     const w = Math.min(width, Math.ceil(b.x + b.w * 1.2)) - left, h = Math.min(height, Math.ceil(b.y + b.h * 1.2)) - top;
-    if (!(w > 0 && h > 0)) continue;
+    if (!(w > 0 && h > 0)) throw new Error('detector box is outside the image'); // fail closed: wrong coordinates, maybe a missed face
     const { channels } = await sharp(await sharp(buffer).extract({ left, top, width: w, height: h }).toBuffer()).stats(); // stats() ignores extract()
     const mean = channels.slice(0, 3).map((c) => Math.round(c.mean));
     overlays.push({ input: { create: { width: w, height: h, channels: 3, background: { r: mean[0], g: mean[1], b: mean[2] } } }, left, top });
