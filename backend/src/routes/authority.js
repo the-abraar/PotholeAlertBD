@@ -32,7 +32,7 @@ router.patch('/reports/:id', (req, res, next) => upload.single('photo')(req, res
 
   let after = row.after_photo_filename;
   if (req.file) {
-    const saved = await photos.savePhoto(req.file.buffer);
+    const saved = await photos.savePhoto(req.file.buffer, { requireBlur: true }); // after photos are public at once: no unblurred fallback
     if (saved.error) return res.status(saved.status).json({ error: saved.error });
     after = saved.filename;
   }

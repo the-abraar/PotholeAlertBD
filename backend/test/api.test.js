@@ -398,3 +398,58 @@ test('retention period is configurable and bad values fall back to 90 days', () 
   assert.deepStrictEqual({ ...row }, { contact_name: null, contact_phone: null });
   assert.ok(db.prepare("SELECT 1 FROM audit_log WHERE action = 'purge_contacts' AND actor = 'system'").get());
 });
+
+test('blurRegions: padded box becomes one flat colour, the rest is untouched', async () => {
+  const { blurRegions } = require('../src/photos');
+  const raw = Buffer.alloc(40 * 40 * 3); for (let i = 0; i < raw.length; i++) raw[i] = (i * 7919) % 251; // noisy image
+  const img = await sharp(raw, { raw: { width: 40, height: 40, channels: 3 } }).png().toBuffer();
+  const out = await blurRegions(img, [{ x: 10, y: 10, w: 10, h: 10 }]);
+  const box = await sharp(await sharp(out).extract({ left: 8, top: 8, width: 14, height: 14 }).toBuffer()).stats(); // +20% padding each side
+  assert.ok(box.channels.slice(0, 3).every((c) => c.stdev === 0));
+  const px = async (b, l, t) => (await sharp(b).extract({ left: l, top: t, width: 1, height: 1 }).removeAlpha().raw().toBuffer()).toString('hex');
+  assert.strictEqual(await px(out, 30, 30), await px(img, 30, 30));
+  await assert.rejects(blurRegions(img, [{ x: NaN, y: 0, w: 5, h: 5 }])); // bad box fails closed, never skipped
+  await assert.rejects(blurRegions(img, [{ x: 100, y: 100, w: 5, h: 5 }])); // box outside the image too
+});
+
+test('detector: boxes are blurred before the file is written; failure keeps the report private', async (t) => {
+  const db = require('../src/db');
+  const photos = require('../src/photos');
+  t.after(() => { photos.detector = null; });
+  const raw = Buffer.alloc(40 * 40 * 3); for (let i = 0; i < raw.length; i++) raw[i] = (i * 7919) % 251;
+  const img = await sharp(raw, { raw: { width: 40, height: 40, channels: 3 } }).png().toBuffer();
+
+  photos.detector = async () => [{ x: 10, y: 10, w: 10, h: 10 }];
+  const ok = await (await post(form({ lat: '23.71', lng: '90.31' }, img))).json();
+  assert.strictEqual(ok.status, 'new');
+  const stored = fs.readFileSync(path.join(photos.UPLOAD_DIR, path.basename(ok.photoUrl)));
+  assert.ok((await sharp(await sharp(stored).extract({ left: 8, top: 8, width: 14, height: 14 }).toBuffer()).stats()).channels.slice(0, 3).every((c) => c.stdev === 0));
+
+  photos.detector = async () => { throw new Error('model crashed'); };
+  const held = await (await post(form({ lat: '23.72', lng: '90.32' }, img))).json();
+  assert.strictEqual(held.status, 'hidden');
+  assert.strictEqual((await fetch(`${base}/api/reports/${held.id}`)).status, 404);
+  assert.ok(db.prepare("SELECT 1 FROM audit_log WHERE action = 'photo_held' AND report_id = ?").get(held.id));
+  const un = await (await fetch(`${base}/api/reports/${held.id}/unhide`, { method: 'POST', headers: adm })).json();
+  assert.strictEqual(un.status, 'new'); // admin approval publishes it
+});
+
+test('authority after photo: detector failure is 503 and stores nothing', async (t) => {
+  const photos = require('../src/photos');
+  const mine = await (await post(form({ lat: '23.8', lng: '90.4', roadType: 'rural_road' }))).json(); // merges into the authority test's report
+  t.after(() => { photos.detector = null; });
+  photos.detector = async () => { throw new Error('model crashed'); };
+  const before = fs.readdirSync(photos.UPLOAD_DIR).length;
+  const f = new FormData(); f.append('status', 'resolved'); f.append('photo', new Blob([PNG], { type: 'image/png' }), 'a.png');
+  const res = await fetch(`${base}/api/authority/reports/${mine.id}`, { method: 'PATCH', headers: { ...fwd('5.5.5.5'), 'x-authority-token': 'lged-token' }, body: f });
+  assert.strictEqual(res.status, 503);
+  assert.strictEqual(fs.readdirSync(photos.UPLOAD_DIR).length, before);
+});
+
+test('PHOTO_REVIEW=1 holds every new report until an admin approves it', async (t) => {
+  process.env.PHOTO_REVIEW = '1';
+  t.after(() => { delete process.env.PHOTO_REVIEW; });
+  const r = await (await post(form({ lat: '23.73', lng: '90.33' }))).json();
+  assert.strictEqual(r.status, 'hidden');
+  assert.strictEqual((await fetch(`${base}/api/reports/${r.id}`)).status, 404);
+});
