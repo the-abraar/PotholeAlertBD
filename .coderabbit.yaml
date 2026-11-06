@@ -1,0 +1,12 @@
+reviews:
+  profile: assertive
+  path_instructions:
+    - path: "backend/**"
+      instructions: |
+        Node backend. Check input validation, auth/authorization, secrets in code, and error handling.
+    - path: "app/**/*.dart"
+      instructions: |
+        Flutter app. Flag location/photo privacy leaks and unawaited futures.
+
+tone_instructions: |
+  Be concise, direct, and constructive.
