@@ -1,0 +1,16 @@
+To: digest@example.invalid
+Subject: PotholeAlertBD: 11 open reports
+
+ঢাকা উত্তর সিটি কর্পোরেশন (DNCC): 11 open reports (11 new in 24h)
+
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.7988,90.35959 | https://demo.invalid/uploads/bb939e09-4b6e-4e67-b108-7f61ee5432bd.jpg
+- new | আবাসিক এলাকার রাস্তা | 23.79081,90.34465 | https://demo.invalid/uploads/ee91d292-4de7-42f1-ab98-47f845e2c719.jpg
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.82295,90.40738 | https://demo.invalid/uploads/b1c9ce99-aa91-486f-8be9-506fc6dffb17.jpg
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.83552,90.39637 | https://demo.invalid/uploads/bb5c01b6-53d5-4707-a9aa-d73f181c0ecd.jpg
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.83186,90.38372 | https://demo.invalid/uploads/70cd16e8-6906-4941-a594-4120e92de7bb.jpg
+- new | আবাসিক এলাকার রাস্তা | 23.87035,90.38328 | https://demo.invalid/uploads/cb4baa9a-d722-423c-9f43-9f2ee6a7d4c7.jpg
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.88931,90.38236 | https://demo.invalid/uploads/c3418cbb-9ab5-4abf-b328-81b7c4de9799.jpg
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.77441,90.34895 | https://demo.invalid/uploads/9f6265b8-6266-4f2f-be09-1f82d78f1fcf.jpg
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.81513,90.34854 | https://demo.invalid/uploads/2755ac9d-85ab-4a9e-b4c1-c73a11a597cc.jpg
+- new | শহরের রাস্তা (সিটি কর্পোরেশন/পৌরসভা) | 23.86906,90.34284 | https://demo.invalid/uploads/400f80ce-2be9-4240-b669-3cdfbbd9158b.jpg
+- in_progress | আবাসিক এলাকার রাস্তা | 23.83075,90.35588 | https://demo.invalid/uploads/bcb1fdf1-6fe3-47dc-850c-63af7dcb0299.jpg

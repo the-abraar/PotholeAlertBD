@@ -1,0 +1,313 @@
+{
+  "generatedAt": "2026-11-10T11:54:08.830Z",
+  "synthetic": true,
+  "env": {
+    "PHOTO_REVIEW": "1",
+    "REPORT_LIMIT_PER_HOUR": "unset (default 20)",
+    "SMTP": "unset",
+    "digest": "--dry-run"
+  },
+  "submissions": [
+    {
+      "n": 1,
+      "lat": 23.83075,
+      "lng": 90.35588,
+      "roadType": "residential",
+      "http": 201,
+      "id": "49b5e158-6122-4221-8fa7-27536839c8eb",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 2,
+      "lat": 23.87058,
+      "lng": 90.36937,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "bc75a59f-5ec3-442d-92e8-d4450bf88169",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 3,
+      "lat": 23.83085,
+      "lng": 90.35588,
+      "roadType": "residential",
+      "http": 201,
+      "id": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+      "status": "hidden",
+      "duplicate": false,
+      "dupOf": 1
+    },
+    {
+      "n": 4,
+      "lat": 23.86906,
+      "lng": 90.34284,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "1d157cc7-06e3-4cc8-8ad8-7776bc1f7d16",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 5,
+      "lat": 23.81513,
+      "lng": 90.34854,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "a4e5a699-2076-4755-812a-0af5773e5cfa",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 6,
+      "lat": 23.77441,
+      "lng": 90.34895,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "fa997836-72fd-4998-ad43-95fadc022874",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 7,
+      "lat": 23.88931,
+      "lng": 90.38236,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "75b8a979-f0f3-4b35-b7fa-19972c402235",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 8,
+      "lat": 23.87035,
+      "lng": 90.38328,
+      "roadType": "residential",
+      "http": 201,
+      "id": "fdba3070-e916-4304-ac10-a113b29ec462",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 9,
+      "lat": 23.83186,
+      "lng": 90.38372,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "52ece552-4c1a-4f03-8215-37a31dbe51e6",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 10,
+      "lat": 23.6201,
+      "lng": 90.5502,
+      "roadType": "national_highway",
+      "http": 201,
+      "id": "495a0aab-e488-4186-92d1-75857de9eb6b",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 11,
+      "lat": 23.70216,
+      "lng": 90.42028,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "8bdb0d56-ee2a-47ee-9202-912135f5d686",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 12,
+      "lat": 24.0417,
+      "lng": 90.3963,
+      "roadType": "national_highway",
+      "http": 201,
+      "id": "342999d3-2ac2-4f3d-9c8c-cb3266d2f4ce",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 13,
+      "lat": 23.83552,
+      "lng": 90.39637,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "5da15d70-e2f1-4f66-92fd-e56a5e933e27",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 14,
+      "lat": 23.7617,
+      "lng": 90.41214,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "a1032e2f-2277-42dd-af69-c3b745e80b89",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 15,
+      "lat": 22.30256,
+      "lng": 91.80675,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "dccffb90-1b79-4d01-8777-369ca50294e8",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 16,
+      "lat": 23.82295,
+      "lng": 90.40738,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "5657a37e-eb27-4127-97b6-591c9245ea58",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 17,
+      "lat": 23.79081,
+      "lng": 90.34465,
+      "roadType": "residential",
+      "http": 201,
+      "id": "c46b9986-e416-481e-b45d-02226c05eefe",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 18,
+      "lat": 23.7988,
+      "lng": 90.35959,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "4ad9d766-11ab-45ba-be69-bded21c8f1ee",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 19,
+      "lat": 23.7372,
+      "lng": 90.42161,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "9648b3cc-92d9-4baa-9c7a-09f5b3523e6b",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 20,
+      "lat": 23.78765,
+      "lng": 90.399,
+      "roadType": "city_road",
+      "http": 201,
+      "id": "00e61123-39a5-4f18-a8af-3788495e3f42",
+      "status": "hidden",
+      "duplicate": false
+    },
+    {
+      "n": 21,
+      "lat": 23.72793,
+      "lng": 90.3887,
+      "roadType": "city_road",
+      "http": 429,
+      "duplicate": false,
+      "error": "too many requests"
+    },
+    {
+      "n": 22,
+      "lat": 23.71053,
+      "lng": 90.38596,
+      "roadType": "city_road",
+      "http": 429,
+      "duplicate": false,
+      "error": "too many requests"
+    },
+    {
+      "n": 23,
+      "lat": 22.36641,
+      "lng": 91.75358,
+      "roadType": "city_road",
+      "http": 429,
+      "duplicate": false,
+      "error": "too many requests"
+    },
+    {
+      "n": 24,
+      "lat": 23.73615,
+      "lng": 90.43304,
+      "roadType": "city_road",
+      "http": 429,
+      "duplicate": false,
+      "error": "too many requests"
+    },
+    {
+      "n": 25,
+      "lat": 22.29788,
+      "lng": 91.75728,
+      "roadType": "city_road",
+      "http": 429,
+      "duplicate": false,
+      "error": "too many requests"
+    }
+  ],
+  "counts": {
+    "posted": 25,
+    "created": 20,
+    "duplicates": 0,
+    "rateLimited": 5,
+    "publicAfterSubmit": 0,
+    "heldForReview": 20,
+    "approved": 18,
+    "rejected": 1,
+    "stillHeld": 1,
+    "authorityInbox": 13,
+    "publicFinal": 19,
+    "emailsSent": 0
+  },
+  "privacy": {
+    "contactInAdminView": true,
+    "contactKeysInPublicJson": []
+  },
+  "authorityActs": [
+    {
+      "id": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+      "to": "resolved",
+      "http": 400,
+      "error": "after photo is required to resolve"
+    },
+    {
+      "id": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+      "to": "in_progress",
+      "http": 200
+    },
+    {
+      "id": "bc75a59f-5ec3-442d-92e8-d4450bf88169",
+      "to": "in_progress",
+      "http": 200
+    },
+    {
+      "id": "49b5e158-6122-4221-8fa7-27536839c8eb",
+      "to": "in_progress",
+      "http": 200
+    },
+    {
+      "id": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+      "to": "resolved",
+      "http": 200
+    },
+    {
+      "id": "bc75a59f-5ec3-442d-92e8-d4450bf88169",
+      "to": "resolved",
+      "http": 200
+    }
+  ],
+  "held": {
+    "rejectedId": "9648b3cc-92d9-4baa-9c7a-09f5b3523e6b",
+    "stillHeldId": "00e61123-39a5-4f18-a8af-3788495e3f42"
+  }
+}

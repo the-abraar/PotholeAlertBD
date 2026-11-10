@@ -1,0 +1,317 @@
+[
+  {
+    "at": "2026-11-10T11:54:08.745Z",
+    "actor": "authority:ঢাকা উত্তর সিটি কর্পোরেশন (DNCC)",
+    "action": "set_status",
+    "reportId": "bc75a59f-5ec3-442d-92e8-d4450bf88169",
+    "detail": "{\"from\":\"in_progress\",\"to\":\"resolved\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.692Z",
+    "actor": "authority:ঢাকা উত্তর সিটি কর্পোরেশন (DNCC)",
+    "action": "set_status",
+    "reportId": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+    "detail": "{\"from\":\"in_progress\",\"to\":\"resolved\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.638Z",
+    "actor": "authority:ঢাকা উত্তর সিটি কর্পোরেশন (DNCC)",
+    "action": "set_status",
+    "reportId": "49b5e158-6122-4221-8fa7-27536839c8eb",
+    "detail": "{\"from\":\"new\",\"to\":\"in_progress\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.636Z",
+    "actor": "authority:ঢাকা উত্তর সিটি কর্পোরেশন (DNCC)",
+    "action": "set_status",
+    "reportId": "bc75a59f-5ec3-442d-92e8-d4450bf88169",
+    "detail": "{\"from\":\"new\",\"to\":\"in_progress\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.633Z",
+    "actor": "authority:ঢাকা উত্তর সিটি কর্পোরেশন (DNCC)",
+    "action": "set_status",
+    "reportId": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+    "detail": "{\"from\":\"new\",\"to\":\"in_progress\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.625Z",
+    "actor": "root",
+    "action": "set_status",
+    "reportId": "9648b3cc-92d9-4baa-9c7a-09f5b3523e6b",
+    "detail": "{\"from\":\"hidden\",\"to\":\"rejected\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.619Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "4ad9d766-11ab-45ba-be69-bded21c8f1ee",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.617Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "c46b9986-e416-481e-b45d-02226c05eefe",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.615Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "5657a37e-eb27-4127-97b6-591c9245ea58",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.613Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "dccffb90-1b79-4d01-8777-369ca50294e8",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.613Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "a1032e2f-2277-42dd-af69-c3b745e80b89",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.610Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "5da15d70-e2f1-4f66-92fd-e56a5e933e27",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.610Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "342999d3-2ac2-4f3d-9c8c-cb3266d2f4ce",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.607Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "8bdb0d56-ee2a-47ee-9202-912135f5d686",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.605Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "495a0aab-e488-4186-92d1-75857de9eb6b",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.603Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "52ece552-4c1a-4f03-8215-37a31dbe51e6",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.600Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "fdba3070-e916-4304-ac10-a113b29ec462",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.598Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "75b8a979-f0f3-4b35-b7fa-19972c402235",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.596Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "fa997836-72fd-4998-ad43-95fadc022874",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.594Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "a4e5a699-2076-4755-812a-0af5773e5cfa",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.592Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "1d157cc7-06e3-4cc8-8ad8-7776bc1f7d16",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.589Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.588Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "bc75a59f-5ec3-442d-92e8-d4450bf88169",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.586Z",
+    "actor": "root",
+    "action": "unhide",
+    "reportId": "49b5e158-6122-4221-8fa7-27536839c8eb",
+    "detail": null
+  },
+  {
+    "at": "2026-11-10T11:54:08.335Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "00e61123-39a5-4f18-a8af-3788495e3f42",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.282Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "9648b3cc-92d9-4baa-9c7a-09f5b3523e6b",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.228Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "4ad9d766-11ab-45ba-be69-bded21c8f1ee",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.176Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "c46b9986-e416-481e-b45d-02226c05eefe",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.124Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "5657a37e-eb27-4127-97b6-591c9245ea58",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.071Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "dccffb90-1b79-4d01-8777-369ca50294e8",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:08.018Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "a1032e2f-2277-42dd-af69-c3b745e80b89",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.966Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "5da15d70-e2f1-4f66-92fd-e56a5e933e27",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.913Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "342999d3-2ac2-4f3d-9c8c-cb3266d2f4ce",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.860Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "8bdb0d56-ee2a-47ee-9202-912135f5d686",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.807Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "495a0aab-e488-4186-92d1-75857de9eb6b",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.755Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "52ece552-4c1a-4f03-8215-37a31dbe51e6",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.701Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "fdba3070-e916-4304-ac10-a113b29ec462",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.646Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "75b8a979-f0f3-4b35-b7fa-19972c402235",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.592Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "fa997836-72fd-4998-ad43-95fadc022874",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.539Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "a4e5a699-2076-4755-812a-0af5773e5cfa",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.485Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "1d157cc7-06e3-4cc8-8ad8-7776bc1f7d16",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.431Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "333effce-e89a-42b7-bf8a-ddec0255f0e5",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.376Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "bc75a59f-5ec3-442d-92e8-d4450bf88169",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:07.314Z",
+    "actor": "system",
+    "action": "photo_held",
+    "reportId": "49b5e158-6122-4221-8fa7-27536839c8eb",
+    "detail": "{\"reason\":\"review\"}"
+  },
+  {
+    "at": "2026-11-10T11:54:06.224Z",
+    "actor": "cli",
+    "action": "add_authority_token",
+    "reportId": null,
+    "detail": "{\"authority\":\"ঢাকা উত্তর সিটি কর্পোরেশন (DNCC)\"}"
+  }
+]

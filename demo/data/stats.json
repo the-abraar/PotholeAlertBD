@@ -1,0 +1,76 @@
+{
+  "total": 19,
+  "resolved": 2,
+  "forwarded": 0,
+  "resolvedRate": 10.5,
+  "byDivision": [
+    {
+      "key": "dhaka",
+      "name": "ঢাকা",
+      "count": 18
+    },
+    {
+      "key": "chattogram",
+      "name": "চট্টগ্রাম",
+      "count": 1
+    },
+    {
+      "key": "rajshahi",
+      "name": "রাজশাহী",
+      "count": 0
+    },
+    {
+      "key": "khulna",
+      "name": "খুলনা",
+      "count": 0
+    },
+    {
+      "key": "barishal",
+      "name": "বরিশাল",
+      "count": 0
+    },
+    {
+      "key": "sylhet",
+      "name": "সিলেট",
+      "count": 0
+    },
+    {
+      "key": "rangpur",
+      "name": "রংপুর",
+      "count": 0
+    },
+    {
+      "key": "mymensingh",
+      "name": "ময়মনসিংহ",
+      "count": 0
+    }
+  ],
+  "byRoadType": [
+    {
+      "roadType": "city_road",
+      "count": 13
+    },
+    {
+      "roadType": "national_highway",
+      "count": 2
+    },
+    {
+      "roadType": "residential",
+      "count": 4
+    }
+  ],
+  "bySeverity": [
+    {
+      "severity": "high",
+      "count": 6
+    },
+    {
+      "severity": "low",
+      "count": 7
+    },
+    {
+      "severity": "medium",
+      "count": 6
+    }
+  ]
+}
