@@ -1,3 +1,5 @@
+Frozen until a named recipient says yes. Allowed: LEARNINGS.md, a demo page, the outreach kit, and the safe-defaults fix only if a host date exists. Call source: `~/Everything/dev/products/decision.md` (labs under the November bet).
+
 # AGENTS.md
 
 - Run `scripts/check.sh` before finishing; `--fast` (lint + stray files) is what the pre-commit hook runs.
